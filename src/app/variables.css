@@ -1,0 +1,65 @@
+/* src/app/variables.css */
+:root {
+    /* Brand Colors */
+    --color-primary: #0A192F;
+    /* Deep Navy */
+    --color-primary-hover: #132845;
+    /* Navy Hover */
+    --color-accent: #D4AF37;
+    /* Gold */
+    --color-accent-subtle: #FEF9C3;
+    /* Gold Light */
+
+    /* Status Colors */
+    --color-success: #059669;
+    /* Emerald Green */
+    --color-success-subtle: #ECFDF5;
+    /* Emerald Light */
+    --color-badge-amber: #D97706;
+    /* Amber Text */
+    --color-badge-amber-bg: #FEF3C7;
+    /* Amber Light */
+
+    /* Backgrounds */
+    --color-bg-main: #FFFFFF;
+    /* Pure White */
+    --color-bg-off: #F9FAFB;
+    /* Off White / Light Grey */
+
+    /* Text */
+    --color-text-main: #111827;
+    /* Dark Charcoal */
+    --color-text-muted: #6B7280;
+    /* Muted Grey */
+
+    /* UI Elements & Borders */
+    --color-border-subtle: #E5E7EB;
+
+    /* Border Radii */
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+}
+
+/* Map CSS variables directly into Tailwind utilities */
+@theme {
+    --color-primary: var(--color-primary);
+    --color-primary-hover: var(--color-primary-hover);
+    --color-accent: var(--color-accent);
+    --color-accent-subtle: var(--color-accent-subtle);
+
+    --color-success: var(--color-success);
+    --color-success-subtle: var(--color-success-subtle);
+    --color-badge-amber: var(--color-badge-amber);
+    --color-badge-amber-bg: var(--color-badge-amber-bg);
+
+    --color-bg-main: var(--color-bg-main);
+    --color-bg-off: var(--color-bg-off);
+
+    --color-text-main: var(--color-text-main);
+    --color-text-muted: var(--color-text-muted);
+
+    --color-border-subtle: var(--color-border-subtle);
+
+    --radius-md: var(--radius-md);
+    --radius-lg: var(--radius-lg);
+}
