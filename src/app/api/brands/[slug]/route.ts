@@ -2,18 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { validateDeviceToken } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
 
 interface RouteParams {
     params: Promise<{ slug: string }>;
 }
 
+function parseBoolean(val: unknown): boolean | undefined {
+    if (typeof val === "boolean") return val;
+    if (typeof val === "string") {
+        const trimmed = val.trim().toLowerCase();
+        if (trimmed === "true" || trimmed === "1") return true;
+        if (trimmed === "false" || trimmed === "0") return false;
+    }
+    if (typeof val === "number") return val === 1;
+    return undefined;
+}
+
 // Helper: Query brand by Slug or ID using strict Prisma return typing
 async function findBrandBySlugOrId(slugOrId: string) {
+    const decoded = decodeURIComponent(slugOrId);
     return prisma.brand.findFirst({
         where: {
             OR: [
-                { slug: slugOrId },
-                { id: slugOrId },
+                { slug: decoded },
+                { id: decoded },
             ],
         },
         include: {
@@ -60,7 +73,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const logo = typeof body.logo === "string" ? body.logo : undefined;
         const websiteUrl = typeof body.websiteUrl === "string" ? body.websiteUrl : undefined;
         const description = typeof body.description === "string" ? body.description : undefined;
-        const isFeatured = typeof body.isFeatured === "boolean" ? body.isFeatured : undefined;
+        const parsedIsFeatured = parseBoolean(body.isFeatured);
 
         // Ensure record exists by slug or id
         const existingBrand = await findBrandBySlugOrId(slug);
@@ -94,12 +107,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (logo !== undefined) updateData.logo = logo || null;
         if (websiteUrl !== undefined) updateData.websiteUrl = websiteUrl || null;
         if (description !== undefined) updateData.description = description || null;
-        if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+        if (parsedIsFeatured !== undefined) updateData.isFeatured = parsedIsFeatured;
 
         const updatedBrand = await prisma.brand.update({
             where: { id: existingBrand.id },
             data: updateData,
         });
+
+        // Purge storefront home page cache instantly on update
+        revalidatePath("/");
 
         return NextResponse.json(updatedBrand);
     } catch (error: unknown) {
@@ -135,6 +151,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         await prisma.brand.delete({
             where: { id: existingBrand.id },
         });
+
+        // Purge storefront home page cache instantly on delete
+        revalidatePath("/");
 
         return NextResponse.json({ success: true, message: "Brand deleted successfully" });
     } catch (error: unknown) {

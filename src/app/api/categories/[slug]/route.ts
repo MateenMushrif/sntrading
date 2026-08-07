@@ -2,17 +2,30 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { validateDeviceToken } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
 
 interface RouteParams {
     params: Promise<{ slug: string }>;
 }
 
+function parseBoolean(val: unknown): boolean | undefined {
+    if (typeof val === "boolean") return val;
+    if (typeof val === "string") {
+        const trimmed = val.trim().toLowerCase();
+        if (trimmed === "true" || trimmed === "1") return true;
+        if (trimmed === "false" || trimmed === "0") return false;
+    }
+    if (typeof val === "number") return val === 1;
+    return undefined;
+}
+
 async function findCategoryBySlugOrId(slugOrId: string) {
+    const decoded = decodeURIComponent(slugOrId);
     return prisma.category.findFirst({
         where: {
             OR: [
-                { slug: slugOrId },
-                { id: slugOrId },
+                { slug: decoded },
+                { id: decoded },
             ],
         },
         include: {
@@ -77,8 +90,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             updateData.image = body.image;
         }
 
-        if (typeof body.isFeatured === "boolean") {
-            updateData.isFeatured = body.isFeatured;
+        const parsedIsFeatured = parseBoolean(body.isFeatured);
+        if (parsedIsFeatured !== undefined) {
+            updateData.isFeatured = parsedIsFeatured;
         }
 
         if (body.displayOrder !== undefined) {
@@ -94,6 +108,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 },
             },
         });
+
+        // ✅ Purge storefront home page cache instantly on update
+        revalidatePath("/");
 
         return NextResponse.json(category);
     } catch (error: unknown) {
@@ -128,6 +145,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         await prisma.category.delete({
             where: { id: existingCategory.id },
         });
+
+        // ✅ Purge storefront home page cache instantly on delete
+        revalidatePath("/");
 
         return NextResponse.json({ success: true });
     } catch (error: unknown) {

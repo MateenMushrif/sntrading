@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { validateDeviceToken } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
 
 // ✅ Helper function to parse boolean values from JSON payloads or strings
 function parseBoolean(val: unknown): boolean {
@@ -240,6 +241,9 @@ export async function POST(request: NextRequest) {
                 applications: { orderBy: { displayOrder: "asc" } },
             },
         });
+
+        // ✅ Purge storefront home page cache instantly
+        revalidatePath("/");
 
         return NextResponse.json(newProduct, { status: 201 });
     } catch (error: unknown) {

@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateDeviceToken } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
+
+function parseBoolean(val: unknown): boolean {
+    if (typeof val === "boolean") return val;
+    if (typeof val === "string") {
+        const trimmed = val.trim().toLowerCase();
+        if (trimmed === "true" || trimmed === "1") return true;
+        if (trimmed === "false" || trimmed === "0") return false;
+    }
+    if (typeof val === "number") return val === 1;
+    return false;
+}
 
 // PUBLIC: Customer website browsing
 export async function GET() {
@@ -33,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { name, slug, description, image } = body;
+        const { name, slug, description, image, isFeatured, displayOrder } = body;
 
         if (!name || !slug) {
             return NextResponse.json(
@@ -43,8 +55,18 @@ export async function POST(request: NextRequest) {
         }
 
         const category = await prisma.category.create({
-            data: { name, slug, description, image },
+            data: {
+                name: name.trim(),
+                slug: slug.trim(),
+                description: typeof description === "string" ? description.trim() || null : null,
+                image: typeof image === "string" ? image : null,
+                isFeatured: parseBoolean(isFeatured),
+                displayOrder: displayOrder !== undefined ? Number(displayOrder) : 0,
+            },
         });
+
+        // ✅ Purge storefront home page cache instantly on creation
+        revalidatePath("/");
 
         return NextResponse.json(category, { status: 201 });
     } catch (error) {

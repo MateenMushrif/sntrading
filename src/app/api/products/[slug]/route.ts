@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { validateDeviceToken } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
 
 interface RouteParams {
     params: Promise<{ slug: string }>;
@@ -230,6 +231,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             include: productIncludeConfig,
         });
 
+        // ✅ Purge storefront home page cache instantly on update
+        revalidatePath("/");
+
         return NextResponse.json(updated);
     } catch (error: unknown) {
         console.error("PUT /api/products/[slug] error:", error);
@@ -260,6 +264,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         }
 
         await prisma.product.delete({ where: { id: existing.id } });
+
+        // ✅ Purge storefront home page cache instantly on delete
+        revalidatePath("/");
 
         return NextResponse.json({ message: "Product deleted successfully" });
     } catch (error: unknown) {

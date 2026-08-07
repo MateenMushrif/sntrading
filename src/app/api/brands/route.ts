@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateDeviceToken } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
+
+function parseBoolean(val: unknown): boolean {
+    if (typeof val === "boolean") return val;
+    if (typeof val === "string") {
+        const trimmed = val.trim().toLowerCase();
+        if (trimmed === "true" || trimmed === "1") return true;
+        if (trimmed === "false" || trimmed === "0") return false;
+    }
+    if (typeof val === "number") return val === 1;
+    return false;
+}
 
 // PUBLIC: Customer website browsing
 export async function GET() {
@@ -56,9 +68,12 @@ export async function POST(request: NextRequest) {
                 logo: logo || null,
                 websiteUrl: websiteUrl || null,
                 description: description || null,
-                isFeatured: Boolean(isFeatured),
+                isFeatured: parseBoolean(isFeatured),
             },
         });
+
+        // Purge storefront home page cache instantly on creation
+        revalidatePath("/");
 
         return NextResponse.json(brand, { status: 201 });
     } catch (error) {
