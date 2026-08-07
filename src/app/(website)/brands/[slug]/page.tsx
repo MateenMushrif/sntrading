@@ -78,7 +78,7 @@ export default async function BrandDetailPage({ params }: PageProps) {
         mainEntity: {
             "@type": "ItemList",
             numberOfItems: brand.products.length,
-            itemListElement: brand.products.map((prod, index) => ({
+            itemListElement: brand.products.map((prod: (typeof brand.products)[number], index: number) => ({
                 "@type": "ListItem",
                 position: index + 1,
                 name: prod.name,
