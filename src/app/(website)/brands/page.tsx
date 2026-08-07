@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { Award, ArrowRight, Globe, Sparkles, Building2, Package } from "lucide-react";
 
@@ -26,8 +27,10 @@ export default async function BrandsPage() {
         orderBy: [{ isFeatured: "desc" }, { name: "asc" }],
     });
 
-    const featuredBrands = brands.filter((b) => b.isFeatured);
-    const regularBrands = brands.filter((b) => !b.isFeatured);
+    type BrandItem = (typeof brands)[number];
+
+    const featuredBrands = brands.filter((b: BrandItem) => b.isFeatured);
+    const regularBrands = brands.filter((b: BrandItem) => !b.isFeatured);
 
     return (
         <main className="max-w-7xl mx-auto px-3 sm:px-6 py-8 space-y-10">
@@ -62,18 +65,20 @@ export default async function BrandsPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {featuredBrands.map((brand) => (
+                        {featuredBrands.map((brand: BrandItem) => (
                             <div
                                 key={brand.id}
                                 className="group relative rounded-xl bg-bg-main border border-accent/40 hover:border-accent p-5 transition-all shadow-2xs hover:shadow-md flex flex-col justify-between space-y-4"
                             >
                                 <div className="flex items-start gap-4">
-                                    <div className="w-16 h-16 rounded-lg bg-bg-off border border-border-subtle p-2 flex items-center justify-center shrink-0 group-hover:bg-accent/5 transition-colors">
+                                    <div className="relative w-16 h-16 rounded-lg bg-bg-off border border-border-subtle p-2 flex items-center justify-center shrink-0 group-hover:bg-accent/5 transition-colors overflow-hidden">
                                         {brand.logo ? (
-                                            <img
+                                            <Image
                                                 src={brand.logo}
                                                 alt={brand.name}
-                                                className="w-full h-full object-contain"
+                                                fill
+                                                sizes="64px"
+                                                className="object-contain p-2"
                                             />
                                         ) : (
                                             <Building2 className="w-8 h-8 text-accent" />
@@ -85,7 +90,7 @@ export default async function BrandsPage() {
                                             <h3 className="text-base font-bold text-primary truncate group-hover:text-accent transition-colors">
                                                 {brand.name}
                                             </h3>
-                                            <span className="shrink-0 px-2 py-0.5 rounded text-[9px] font-extrabold bg-accent/10 text-accent border border-accent/20">
+                                            <span className="shrink-0 px-2 py-0.5 rounded text-2xs font-extrabold bg-accent/10 text-accent border border-accent/20">
                                                 FEATURED
                                             </span>
                                         </div>
@@ -142,19 +147,21 @@ export default async function BrandsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {(featuredBrands.length > 0 ? regularBrands : brands).map((brand) => (
+                    {(featuredBrands.length > 0 ? regularBrands : brands).map((brand: BrandItem) => (
                         <div
                             key={brand.id}
                             className="group rounded-xl bg-bg-main border border-border-subtle hover:border-accent p-4 transition-all shadow-2xs hover:shadow-md flex flex-col justify-between"
                         >
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-lg bg-bg-off border border-border-subtle p-1.5 flex items-center justify-center shrink-0 group-hover:bg-accent/10 transition-colors">
+                                    <div className="relative w-12 h-12 rounded-lg bg-bg-off border border-border-subtle p-1.5 flex items-center justify-center shrink-0 group-hover:bg-accent/10 transition-colors overflow-hidden">
                                         {brand.logo ? (
-                                            <img
+                                            <Image
                                                 src={brand.logo}
                                                 alt={brand.name}
-                                                className="w-full h-full object-contain"
+                                                fill
+                                                sizes="48px"
+                                                className="object-contain p-1.5"
                                             />
                                         ) : (
                                             <Award className="w-6 h-6 text-accent" />
