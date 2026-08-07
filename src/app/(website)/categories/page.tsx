@@ -27,6 +27,8 @@ export default async function CategoriesPage() {
         orderBy: { name: "asc" },
     });
 
+    type CategoryItem = (typeof categories)[number];
+
     return (
         <main className="mx-auto max-w-7xl px-4 py-8">
             {/* Header */}
@@ -41,7 +43,7 @@ export default async function CategoriesPage() {
 
             {/* Light Theme Category Grid */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {categories.map((cat, index) => {
+                {categories.map((cat: CategoryItem, index: number) => {
                     const imageUrl = typeof cat.image === "string" ? cat.image : null;
 
                     return (
