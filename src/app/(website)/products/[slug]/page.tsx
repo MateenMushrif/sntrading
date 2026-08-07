@@ -92,6 +92,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
         notFound();
     }
 
+    type ImageItem = (typeof product.images)[number];
+    type BadgeItem = (typeof product.badges)[number];
+
     const primaryImage =
         product.thumbnailImage?.secureUrl ||
         product.images[0]?.secureUrl ||
@@ -103,7 +106,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
         "@context": "https://schema.org",
         "@type": "Product",
         name: product.name,
-        image: [primaryImage, ...product.images.map((img) => img.secureUrl)],
+        image: [primaryImage, ...product.images.map((img: ImageItem) => img.secureUrl)],
         description: descriptionText,
         brand: {
             "@type": "Brand",
@@ -170,7 +173,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     {/* Badges */}
                     {product.badges.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
-                            {product.badges.map(({ badge }) => (
+                            {product.badges.map(({ badge }: BadgeItem) => (
                                 <span
                                     key={badge.id}
                                     className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200"

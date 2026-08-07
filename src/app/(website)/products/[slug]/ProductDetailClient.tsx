@@ -39,7 +39,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
         rawImages.push(product.thumbnailImage);
     }
     if (Array.isArray(product.images)) {
-        product.images.forEach((img) => {
+        product.images.forEach((img: { secureUrl: string; altText?: string | null }) => {
             if (img?.secureUrl && img.secureUrl !== product.thumbnailImage?.secureUrl) {
                 rawImages.push(img);
             }
@@ -53,8 +53,8 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     const safeIndex = currentImageIndex % images.length;
     const currentImg = images[safeIndex] || images[0];
 
-    const nextImage = () => setCurrentImageIndex((prev) => (prev + 1) % images.length);
-    const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    const nextImage = () => setCurrentImageIndex((prev: number) => (prev + 1) % images.length);
+    const prevImage = () => setCurrentImageIndex((prev: number) => (prev - 1 + images.length) % images.length);
 
     const handleTouchStart = (e: TouchEvent) => setTouchStartX(e.touches[0].clientX);
     const handleTouchEnd = (e: TouchEvent) => {
@@ -80,7 +80,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
     const normalizedSpecs: Array<{ id?: string; label: string; value: string }> = [];
 
     if (Array.isArray(product.specifications)) {
-        product.specifications.forEach((spec) => {
+        product.specifications.forEach((spec: SpecificationItem) => {
             if (spec && typeof spec === "object" && spec.value) {
                 const label = spec.label || spec.key || spec.name || "Spec";
                 normalizedSpecs.push({
@@ -91,7 +91,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
             }
         });
     } else if (product.specifications && typeof product.specifications === "object") {
-        Object.entries(product.specifications).forEach(([k, v]) => {
+        Object.entries(product.specifications as Record<string, string>).forEach(([k, v]: [string, string]) => {
             if (v) normalizedSpecs.push({ label: k, value: String(v) });
         });
     }
@@ -123,7 +123,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Left Column: Scaled 1:1 Square Hero Frame (5 columns on large screens) */}
+            {/* Left Column: Scaled 1:1 Square Hero Frame */}
             <div className="lg:col-span-5 space-y-4">
                 <div
                     onTouchStart={handleTouchStart}
@@ -170,7 +170,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 {/* Thumbnails Row */}
                 {images.length > 1 && (
                     <div className="flex items-center justify-center gap-2 overflow-x-auto pb-1 max-w-md mx-auto">
-                        {images.map((img, idx) => {
+                        {images.map((img: { secureUrl: string; altText?: string | null }, idx: number) => {
                             const isSelected = idx === safeIndex;
                             return (
                                 <button
@@ -196,7 +196,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                 )}
             </div>
 
-            {/* Right Column: Controls & Specs (7 columns on large screens) */}
+            {/* Right Column: Controls & Specs */}
             <div className="lg:col-span-7 space-y-6">
                 {/* Packaging Variants */}
                 {product.variants.length > 0 && (
@@ -211,7 +211,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                         </div>
 
                         <div className="grid grid-cols-2 gap-2.5">
-                            {product.variants.map((v, idx) => {
+                            {product.variants.map((v: ProductVariant, idx: number) => {
                                 const isSelected = selectedVariant.id === v.id;
                                 const variantKey = v.id || `variant-${idx}`;
 
@@ -254,7 +254,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                         </div>
 
                         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs pt-1 border-t border-slate-200/60">
-                            {normalizedSpecs.map((spec, idx) => (
+                            {normalizedSpecs.map((spec: { id?: string; label: string; value: string }, idx: number) => (
                                 <div
                                     key={`spec-${spec.label}-${idx}`}
                                     className="flex flex-col bg-white p-2.5 rounded-lg border border-slate-200/60 shadow-2xs"
@@ -276,7 +276,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                     <div className="flex items-center border border-slate-300 rounded-xl bg-slate-50 shadow-2xs shrink-0 overflow-hidden">
                         <button
                             type="button"
-                            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                            onClick={() => setQuantity((q: number) => Math.max(1, q - 1))}
                             className="px-3 py-2 text-xs font-bold text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer select-none"
                             aria-label="Decrease quantity"
                         >
@@ -287,7 +287,7 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                         </span>
                         <button
                             type="button"
-                            onClick={() => setQuantity((q) => q + 1)}
+                            onClick={() => setQuantity((q: number) => q + 1)}
                             className="px-3 py-2 text-xs font-bold text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer select-none"
                             aria-label="Increase quantity"
                         >
