@@ -47,14 +47,17 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Formatted WhatsApp payload build
-        let message = `*NEW B2B WHOLESALE INQUIRY - SN TRADING*\n`;
-        message += `------------------------------------\n`;
+        // Clean ASCII formatted WhatsApp payload
+        let message = `*NEW WHOLESALE INQUIRY - SN TRADING*\n`;
+        message += `====================================\n\n`;
+
+        message += `[CUSTOMER DETAILS]\n`;
         message += `*Buyer:* ${buyerName.trim()}\n`;
         if (businessName) message += `*Business:* ${businessName.trim()}\n`;
         message += `*Phone:* ${phone.trim()}\n`;
-        if (email) message += `*Email:* ${email.trim()}\n\n`;
-        message += `*REQUESTED ITEMS:*\n`;
+        if (email) message += `*Email:* ${email.trim()}\n`;
+
+        message += `\n[REQUESTED ITEMS]\n\n`;
 
         items.forEach((item: CartItem, index: number) => {
             const productName = item.product?.name || "Product";
@@ -63,11 +66,11 @@ export async function POST(request: NextRequest) {
 
             message += `${index + 1}. *${productName}*\n`;
             message += `   - Pack: ${packInfo}\n`;
-            message += `   - Quantity: ${qty}\n`;
+            message += `   - Quantity: ${qty}\n\n`;
         });
 
         if (notes && typeof notes === "string" && notes.trim() !== "") {
-            message += `\n*Notes/Remarks:* ${notes.trim()}\n`;
+            message += `[NOTES / REMARKS]\n${notes.trim()}\n`;
         }
 
         // Clean any potential formatting characters from env var (spaces, +, dashes)

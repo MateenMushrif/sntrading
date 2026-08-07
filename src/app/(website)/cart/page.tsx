@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, ArrowLeft, Send, CheckCircle2, Loader2 } from "lucide-react";
+import { Trash2, Send, CheckCircle2, Loader2, RefreshCw, ShoppingBag, Store } from "lucide-react";
 import { productService } from "@/services/product.service";
 
 export default function CartPage() {
@@ -20,6 +20,7 @@ export default function CartPage() {
 
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [lastWhatsappUrl, setLastWhatsappUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const handleInputChange = (
@@ -42,12 +43,12 @@ export default function CartPage() {
                 items: cart,
             });
 
-            setSuccess(true);
-            clearCart();
-
             if (response?.whatsappUrl) {
+                setLastWhatsappUrl(response.whatsappUrl);
                 window.open(response.whatsappUrl, "_blank");
             }
+
+            setSuccess(true);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Failed to submit inquiry";
             setError(message);
@@ -56,20 +57,38 @@ export default function CartPage() {
         }
     };
 
+    const handleClearAndFinish = () => {
+        clearCart();
+        setSuccess(false);
+    };
+
+    const handleKeepCartAndEdit = () => {
+        setSuccess(false);
+    };
+
     if (cart.length === 0 && !success) {
         return (
-            <main className="max-w-4xl mx-auto px-4 py-12 text-center">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 max-w-md mx-auto">
-                    <h2 className="text-lg font-bold text-slate-900 mb-2">Your Inquiry Cart is Empty</h2>
-                    <p className="text-xs text-slate-500 mb-6">
-                        Browse our catalog and add bulk raw materials to request a personalized quote.
+            <main className="max-w-4xl mx-auto px-4 py-16 text-center">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-8 sm:p-12 max-w-lg mx-auto shadow-sm">
+                    {/* Visual Cart Icon Container */}
+                    <div className="relative w-24 h-24 bg-amber-50 border border-amber-200/60 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                        <ShoppingBag className="w-11 h-11 text-amber-600" />
+                        <span className="absolute -top-1 -right-1 bg-slate-900 text-white text-xs font-bold px-2 py-0.5 rounded-full border-2 border-white">
+                            0 Items
+                        </span>
+                    </div>
+
+                    <h2 className="text-xl font-extrabold text-slate-900 mb-2">Your Inquiry Cart is Empty</h2>
+                    <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto mb-8 leading-relaxed">
+                        Looks like you haven&apos;t added any bulk bakery ingredients yet. Browse our catalogue to request wholesale quotes.
                     </p>
+
                     <Link
                         href="/products"
-                        className="inline-flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-slate-800 transition-colors"
+                        className="inline-flex items-center justify-center gap-2 bg-amber-400 text-slate-900 px-6 py-3 rounded-full text-xs font-extrabold hover:bg-amber-500 transition-all shadow-sm hover:shadow cursor-pointer"
                     >
-                        <ArrowLeft className="w-3.5 h-3.5" />
-                        Explore Catalogue
+                        <Store className="w-4 h-4" />
+                        Explore Catalogue & Ingredients
                     </Link>
                 </div>
             </main>
@@ -78,21 +97,45 @@ export default function CartPage() {
 
     return (
         <main className="max-w-7xl mx-auto px-3 sm:px-4 py-8">
-            <h1 className="text-2xl font-extrabold text-slate-900 mb-6">B2B Wholesale Inquiry Cart</h1>
+            <h1 className="text-2xl font-extrabold text-slate-900 mb-6">Wholesale Inquiry Cart</h1>
 
             {success ? (
-                <div className="bg-slate-50 border border-emerald-400/40 rounded-xl p-8 text-center max-w-lg mx-auto">
+                <div className="bg-slate-50 border border-emerald-400/40 rounded-xl p-8 text-center max-w-lg mx-auto shadow-sm">
                     <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                    <h2 className="text-xl font-bold text-slate-900 mb-2">Inquiry Submitted Successfully!</h2>
+                    <h2 className="text-xl font-bold text-slate-900 mb-2">Inquiry Generated!</h2>
                     <p className="text-xs text-slate-500 mb-6">
-                        We have generated your request details. If WhatsApp did not launch automatically, click below to continue.
+                        WhatsApp should have opened in a new tab. If it didn&apos;t open or you closed it by accident, click below to open it again.
                     </p>
-                    <Link
-                        href="/products"
-                        className="inline-block bg-slate-900 text-white px-6 py-2.5 rounded-full text-xs font-bold hover:bg-slate-800 transition-colors"
-                    >
-                        Continue Browsing
-                    </Link>
+
+                    {lastWhatsappUrl && (
+                        <a
+                            href={lastWhatsappUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-full text-xs font-bold hover:bg-emerald-700 transition-colors mb-6"
+                        >
+                            <Send className="w-4 h-4" />
+                            Open WhatsApp Again
+                        </a>
+                    )}
+
+                    <div className="border-t border-slate-200 pt-6 mt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <button
+                            onClick={handleClearAndFinish}
+                            type="button"
+                            className="w-full sm:w-auto bg-slate-900 text-white px-5 py-2 rounded-full text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer"
+                        >
+                            Clear Cart &amp; Continue
+                        </button>
+                        <button
+                            onClick={handleKeepCartAndEdit}
+                            type="button"
+                            className="w-full sm:w-auto border border-slate-300 text-slate-700 bg-white px-5 py-2 rounded-full text-xs font-bold hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            Keep Items in Cart
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
