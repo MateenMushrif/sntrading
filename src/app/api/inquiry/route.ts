@@ -39,6 +39,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
+        if (!whatsappNumber) {
+            return NextResponse.json(
+                { error: "WhatsApp recipient number is not configured in environment variables" },
+                { status: 500 }
+            );
+        }
+
         // Formatted WhatsApp payload build
         let message = `*NEW B2B WHOLESALE INQUIRY - SN TRADING*\n`;
         message += `------------------------------------\n`;
@@ -62,8 +70,9 @@ export async function POST(request: NextRequest) {
             message += `\n*Notes/Remarks:* ${notes.trim()}\n`;
         }
 
-        const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919876543210";
-        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+        // Clean any potential formatting characters from env var (spaces, +, dashes)
+        const cleanNumber = whatsappNumber.replace(/[^0-9]/g, "");
+        const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
 
         return NextResponse.json({
             success: true,

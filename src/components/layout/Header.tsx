@@ -282,8 +282,8 @@ export default function Header() {
                             </li>
                             <li className="flex items-center gap-2">
                                 <Phone className="w-3.5 h-3.5 text-accent shrink-0" />
-                                <a href="tel:+919876543210" className="hover:text-accent transition-colors">
-                                    +91 98765 43210
+                                <a href="tel:+91 9356712710" className="hover:text-accent transition-colors">
+                                    +91 93567 12710
                                 </a>
                             </li>
                             <li className="flex items-center gap-2">

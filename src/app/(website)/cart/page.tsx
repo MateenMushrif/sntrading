@@ -229,7 +229,7 @@ export default function CartPage() {
                                         required
                                         value={formData.phone}
                                         onChange={handleInputChange}
-                                        placeholder="+91 98765 43210"
+                                        placeholder="+91 9356712710"
                                         className="w-full bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:border-amber-500"
                                     />
                                 </div>

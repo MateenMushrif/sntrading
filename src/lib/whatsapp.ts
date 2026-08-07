@@ -1,6 +1,6 @@
 import { CartItem } from "@/types/cart";
 
-const WHATSAPP_PHONE_NUMBER = "919000000000"; // Replace with SN Trading's business number
+const WHATSAPP_PHONE_NUMBER = "918236712710"; // Replace with SN Trading's business number
 
 export function generateWhatsAppLink(cart: CartItem[], notes?: string): string {
     let message = `*Hello SN Trading,*\n\nI would like to inquire about bulk wholesale pricing for the following items:\n\n`;

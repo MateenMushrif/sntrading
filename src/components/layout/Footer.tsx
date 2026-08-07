@@ -173,14 +173,14 @@ export default function Footer() {
                             </li>
                             <li className="flex items-center gap-2">
                                 <Phone className="w-3.5 h-3.5 text-accent shrink-0" />
-                                <a href="tel:+919876543210" className="hover:text-accent transition-colors">
+                                <a href="tel:+91 9356712710" className="hover:text-accent transition-colors">
                                     +91 98765 43210
                                 </a>
                             </li>
                             <li className="flex items-center gap-2">
                                 <MessageSquare className="w-3.5 h-3.5 text-accent shrink-0" />
                                 <a
-                                    href="https://wa.me/919876543210"
+                                    href="https://wa.me/919356712710"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="hover:text-accent transition-colors"
