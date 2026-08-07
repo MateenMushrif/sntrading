@@ -7,6 +7,18 @@ interface RouteParams {
     params: Promise<{ slug: string }>;
 }
 
+// Robust boolean parser handling booleans, strings ("true"/"false"), and numbers (1/0)
+function parseBoolean(val: unknown): boolean | undefined {
+    if (typeof val === "boolean") return val;
+    if (typeof val === "string") {
+        const trimmed = val.trim().toLowerCase();
+        if (trimmed === "true" || trimmed === "1") return true;
+        if (trimmed === "false" || trimmed === "0") return false;
+    }
+    if (typeof val === "number") return val === 1;
+    return undefined;
+}
+
 const productIncludeConfig = {
     brand: true,
     category: true,
@@ -32,11 +44,12 @@ const productIncludeConfig = {
 };
 
 async function findProductBySlugOrId(slugOrId: string) {
+    const decoded = decodeURIComponent(slugOrId);
     return prisma.product.findFirst({
         where: {
             OR: [
-                { slug: slugOrId },
-                { id: slugOrId },
+                { slug: decoded },
+                { id: decoded },
             ],
         },
         include: productIncludeConfig,
@@ -76,12 +89,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         const updateData: Prisma.ProductUncheckedUpdateInput = {};
 
-        if (typeof body.isFeatured === "boolean") {
-            updateData.isFeatured = body.isFeatured;
+        // Parse boolean fields reliably
+        const parsedIsFeatured = parseBoolean(body.isFeatured);
+        if (parsedIsFeatured !== undefined) {
+            updateData.isFeatured = parsedIsFeatured;
         }
-        if (typeof body.isLatest === "boolean") {
-            updateData.isLatest = body.isLatest;
+
+        const parsedIsLatest = parseBoolean(body.isLatest);
+        if (parsedIsLatest !== undefined) {
+            updateData.isLatest = parsedIsLatest;
         }
+
         if (typeof body.name === "string" && body.name.trim() !== "") {
             updateData.name = body.name.trim();
         }
@@ -127,7 +145,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         // 2. Handle Multi-Image Gallery Payload
         if (Array.isArray(body.images)) {
-            // Safely wipe old gallery photos without touching the active cover photo
             await prisma.productImage.deleteMany({
                 where: {
                     productId: existing.id,
@@ -138,13 +155,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
             const galleryItems = body.images as Array<{ secureUrl: string; publicId?: string; altText?: string }>;
 
-            // Get current thumbnail URL to ensure cover photo is never duplicated into gallery
             const thumbnailImgRecord = currentThumbnailId
                 ? await prisma.productImage.findUnique({ where: { id: currentThumbnailId } })
                 : null;
             const thumbnailUrl = thumbnailImgRecord?.secureUrl;
 
-            // Track processed URLs to prevent duplicate uploads in the same request
             const seenUrls = new Set<string>();
             if (thumbnailUrl) seenUrls.add(thumbnailUrl);
 

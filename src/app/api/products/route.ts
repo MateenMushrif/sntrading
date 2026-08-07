@@ -3,8 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { validateDeviceToken } from "@/lib/auth";
 
+// Helper to safely parse boolean inputs from JSON or Form payloads
+function parseBoolean(val: unknown): boolean | undefined {
+    if (typeof val === "boolean") return val;
+    if (typeof val === "string") {
+        const trimmed = val.trim().toLowerCase();
+        if (trimmed === "true" || trimmed === "1") return true;
+        if (trimmed === "false" || trimmed === "0") return false;
+    }
+    if (typeof val === "number") return val === 1;
+    return undefined;
+}
+
 export async function GET(request: NextRequest) {
-    // Read operations (GET) are public for customer website browsing
     try {
         const { searchParams } = new URL(request.url);
         const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -72,7 +83,6 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-    // Hardware Token Validation enforced for administrative creations
     const auth = await validateDeviceToken(request);
     if (!auth.isValid) {
         return auth.response;
@@ -185,14 +195,14 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
-        // Build strictly-typed ProductCreateInput payload
+        // Build ProductCreateInput with robust boolean parsing
         const productData: Prisma.ProductCreateInput = {
             name: name.trim(),
             slug: slug.trim(),
             shortDescription: shortDescription?.trim() || description?.trim() || null,
             fullDescription: fullDescription?.trim() || description?.trim() || null,
-            isFeatured: typeof isFeatured === "boolean" ? isFeatured : false,
-            isLatest: typeof isLatest === "boolean" ? isLatest : false,
+            isFeatured: parseBoolean(isFeatured) ?? false, // ✅ Parses boolean or string "true"/"false"
+            isLatest: parseBoolean(isLatest) ?? false,
             category: categoryId ? { connect: { id: categoryId } } : undefined,
             brand: brandId ? { connect: { id: brandId } } : undefined,
             images: galleryToCreate.length > 0 ? { create: galleryToCreate } : undefined,
@@ -202,7 +212,6 @@ export async function POST(request: NextRequest) {
             variants: variantsToCreate.length > 0 ? { create: variantsToCreate } : undefined,
         };
 
-        // Handle thumbnail creation or connection cleanly
         if (thumbnailImage && typeof thumbnailImage === "object" && thumbnailImage.secureUrl) {
             const imgData = thumbnailImage as { secureUrl: string; publicId?: string };
             productData.thumbnailImage = {
