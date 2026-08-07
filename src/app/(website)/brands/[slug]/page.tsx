@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import ProductGrid from "@/components/product/ProductGrid";
 import Link from "next/link";
@@ -62,8 +63,8 @@ export default async function BrandDetailPage({ params }: PageProps) {
         notFound();
     }
 
-    // Map Prisma products to flatten the brand field as a string name/ID
-    const formattedProducts = brand.products.map((product) => ({
+    // Map Prisma products to flatten the brand field with explicit element typing
+    const formattedProducts = brand.products.map((product: (typeof brand.products)[number]) => ({
         ...product,
         brand: brand.name, // Supplies the brand string expected by ProductGrid
     }));
@@ -112,12 +113,14 @@ export default async function BrandDetailPage({ params }: PageProps) {
 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-start sm:items-center gap-5">
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-bg-main border border-border-subtle p-3 flex items-center justify-center shrink-0 shadow-2xs">
+                        <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-bg-main border border-border-subtle p-3 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
                             {brand.logo ? (
-                                <img
+                                <Image
                                     src={brand.logo}
                                     alt={brand.name}
-                                    className="w-full h-full object-contain"
+                                    fill
+                                    sizes="(max-width: 640px) 80px, 96px"
+                                    className="object-contain p-2"
                                 />
                             ) : (
                                 <Building2 className="w-10 h-10 text-accent" />
@@ -131,7 +134,7 @@ export default async function BrandDetailPage({ params }: PageProps) {
                                 </h1>
 
                                 {brand.isFeatured && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-extrabold bg-accent/10 text-accent border border-accent/20">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-extrabold bg-accent/10 text-accent border border-accent/20">
                                         <Sparkles className="w-3 h-3" />
                                         <span>FEATURED PARTNER</span>
                                     </span>
