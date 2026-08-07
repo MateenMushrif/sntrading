@@ -101,6 +101,8 @@ export default async function CategoryDetailPage({ params }: PageProps) {
         notFound();
     }
 
+    type CategoryProduct = (typeof category.products)[number];
+
     const imageUrl = typeof category.image === "string" ? category.image : null;
 
     const jsonLd = {
@@ -113,7 +115,7 @@ export default async function CategoryDetailPage({ params }: PageProps) {
         mainEntity: {
             "@type": "ItemList",
             numberOfItems: category.products.length,
-            itemListElement: category.products.map((prod, index) => ({
+            itemListElement: category.products.map((prod: CategoryProduct, index: number) => ({
                 "@type": "ListItem",
                 position: index + 1,
                 name: prod.name,
@@ -194,7 +196,7 @@ export default async function CategoryDetailPage({ params }: PageProps) {
                     </p>
                 </div>
             ) : (
-                <ProductGrid products={category.products} />
+                <ProductGrid products={category.products as unknown as React.ComponentProps<typeof ProductGrid>['products']} />
             )}
         </main>
     );
