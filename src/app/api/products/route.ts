@@ -50,15 +50,15 @@ export async function GET(request: NextRequest) {
                 where,
                 skip,
                 take: limit,
+                // ✅ Optimized include: Pulls only list-essential relations
+                // Drops heavy gallery images, specifications, features, & applications
                 include: {
                     brand: true,
                     category: true,
                     thumbnailImage: true,
-                    images: { orderBy: { displayOrder: "asc" } },
-                    variants: { orderBy: { displayOrder: "asc" } },
-                    specifications: { orderBy: { displayOrder: "asc" } },
-                    features: { orderBy: { displayOrder: "asc" } },
-                    applications: { orderBy: { displayOrder: "asc" } },
+                    variants: {
+                        orderBy: { displayOrder: "asc" },
+                    },
                 },
                 orderBy: { createdAt: "desc" },
             }),
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
             slug: slug.trim(),
             shortDescription: shortDescription?.trim() || description?.trim() || null,
             fullDescription: fullDescription?.trim() || description?.trim() || null,
-            isFeatured: parseBoolean(isFeatured), // ✅ Safely parses boolean values
+            isFeatured: parseBoolean(isFeatured),
             isLatest: parseBoolean(isLatest),
             category: categoryId ? { connect: { id: categoryId } } : undefined,
             brand: brandId ? { connect: { id: brandId } } : undefined,

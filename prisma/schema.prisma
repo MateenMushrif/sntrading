@@ -20,15 +20,15 @@ enum ProductStatus {
 // ------------------------------------------------------
 
 model Product {
-  id               String        @id @default(cuid())
+  id               String   @id @default(cuid())
   name             String
-  slug             String        @unique
+  slug             String   @unique
   shortDescription String?
   fullDescription  String?
   status           ProductStatus @default(ACTIVE)
-  isFeatured       Boolean       @default(false)
-  isLatest         Boolean       @default(false)
-  displayOrder     Int           @default(0)
+  isFeatured       Boolean  @default(false)
+  isLatest         Boolean  @default(false)
+  displayOrder     Int      @default(0)
 
   // SEO Metadata
   metaTitle        String?
@@ -60,15 +60,20 @@ model Product {
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt
 
+  // Individual Foreign Key Indexes
   @@index([slug])
   @@index([categoryId])
   @@index([brandId])
-  @@index([status])
-  @@index([isFeatured])
+
+  // High-Performance Composite Indexes for List Queries & Sorting
+  @@index([status, createdAt])
+  @@index([status, isFeatured])
+  @@index([status, isLatest])
+  @@index([displayOrder])
 }
 
 // ------------------------------------------------------
-// PRODUCT IMAGES (Cloudinary Integration)
+// PRODUCT IMAGES
 // ------------------------------------------------------
 
 model ProductImage {
@@ -85,15 +90,13 @@ model ProductImage {
   isThumbnail        Boolean  @default(false)
   displayOrder       Int      @default(0)
 
-  // Back-relation for thumbnail pointer
   thumbnailForProduct Product? @relation("ProductThumbnail")
-
-  // Optional link to specific variant
   variants           ProductVariant[]
 
   createdAt          DateTime @default(now())
 
   @@index([productId])
+  @@index([productId, displayOrder]) // Accelerates gallery image sorting
 }
 
 // ------------------------------------------------------
@@ -105,7 +108,7 @@ model Category {
   name         String
   slug         String    @unique
   description  String?
-  image        String?   // Cloudinary secureUrl or path
+  image        String?   
   isFeatured   Boolean   @default(false)
   displayOrder Int       @default(0)
 
@@ -116,14 +119,15 @@ model Category {
 
   @@index([slug])
   @@index([isFeatured])
+  @@index([displayOrder])
 }
 
 model Brand {
   id          String    @id @default(cuid())
   name        String
   slug        String    @unique
-  logo        String?   // Cloudinary secureUrl or path
-  websiteUrl  String?   // Official brand link
+  logo        String?   
+  websiteUrl  String?   
   description String?
   isFeatured  Boolean   @default(false)
   products    Product[]
@@ -131,6 +135,7 @@ model Brand {
   updatedAt   DateTime  @updatedAt
 
   @@index([slug])
+  @@index([isFeatured]) // Added missing index for brand queries
 }
 
 // ------------------------------------------------------
@@ -142,12 +147,11 @@ model ProductVariant {
   productId    String
   product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  name         String   // e.g. "10kg Carton", "25kg Bag"
-  weightOrSize String   // e.g. "10 kg", "25 kg"
+  name         String   
+  weightOrSize String   
   sku          String?  @unique
   displayOrder Int      @default(0)
 
-  // Optional variant-specific image
   imageId      String?
   image        ProductImage? @relation(fields: [imageId], references: [id], onDelete: SetNull)
 
@@ -155,6 +159,7 @@ model ProductVariant {
   updatedAt    DateTime @updatedAt
 
   @@index([productId])
+  @@index([productId, displayOrder])
 }
 
 model ProductSpecification {
@@ -162,11 +167,12 @@ model ProductSpecification {
   productId    String
   product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  label        String   // e.g. "Shelf Life", "Country of Origin"
-  value        String   // e.g. "12 Months", "Belgium"
+  label        String   
+  value        String   
   displayOrder Int      @default(0)
 
   @@index([productId])
+  @@index([productId, displayOrder])
 }
 
 model ProductFeature {
@@ -174,10 +180,11 @@ model ProductFeature {
   productId    String
   product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  feature      String   // e.g. "High Bake Stability", "100% Cocoa Butter"
+  feature      String   
   displayOrder Int      @default(0)
 
   @@index([productId])
+  @@index([productId, displayOrder])
 }
 
 model ProductApplication {
@@ -185,10 +192,11 @@ model ProductApplication {
   productId    String
   product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  application  String   // e.g. "Cakes & Pastries", "Ice Cream Coating"
+  application  String   
   displayOrder Int      @default(0)
 
   @@index([productId])
+  @@index([productId, displayOrder])
 }
 
 // ------------------------------------------------------
