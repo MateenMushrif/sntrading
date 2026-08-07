@@ -95,14 +95,20 @@ export async function POST(request: NextRequest) {
             variants,
         } = body;
 
-        if (!name || !slug || !categoryId || !brandId) {
+        if (!name || !slug) {
             return NextResponse.json(
-                { error: "Missing required fields: name, slug, categoryId, brandId" },
+                { error: "Missing required fields: name, slug" },
                 { status: 400 }
             );
         }
 
-        // Sanitize and format specifications payload
+        // Sanitize thumbnailImageId: convert empty string "" to null to avoid Foreign Key error
+        const sanitizedThumbnailImageId =
+            typeof thumbnailImageId === "string" && thumbnailImageId.trim() !== ""
+                ? thumbnailImageId.trim()
+                : null;
+
+        // 1. Sanitize specifications (label, value)
         const specsToCreate = Array.isArray(specifications)
             ? specifications
                 .filter((s: { label?: string; value?: string }) => s.label?.trim() && s.value?.trim())
@@ -111,21 +117,65 @@ export async function POST(request: NextRequest) {
                     value: s.value.trim(),
                     displayOrder: typeof s.displayOrder === "number" ? s.displayOrder : idx + 1,
                 }))
-            : undefined;
+            : [];
+
+        // 2. Sanitize features -> matches model ProductFeature { feature: String }
+        const featuresToCreate = Array.isArray(features)
+            ? features
+                .filter((f: { feature?: string; text?: string }) => (f.feature || f.text)?.trim())
+                .map((f: { feature?: string; text?: string; displayOrder?: number }, idx: number) => ({
+                    feature: (f.feature || f.text || "").trim(),
+                    displayOrder: typeof f.displayOrder === "number" ? f.displayOrder : idx + 1,
+                }))
+            : [];
+
+        // 3. Sanitize applications -> matches model ProductApplication { application: String }
+        const applicationsToCreate = Array.isArray(applications)
+            ? applications
+                .filter((a: { application?: string; text?: string; name?: string }) =>
+                    (a.application || a.text || a.name)?.trim()
+                )
+                .map((a: { application?: string; text?: string; name?: string; displayOrder?: number }, idx: number) => ({
+                    application: (a.application || a.text || a.name || "").trim(),
+                    displayOrder: typeof a.displayOrder === "number" ? a.displayOrder : idx + 1,
+                }))
+            : [];
+
+        // 4. Sanitize variants -> matches model ProductVariant { name, weightOrSize, sku, imageId }
+        const variantsToCreate = Array.isArray(variants)
+            ? variants
+                .filter((v: { name?: string; weightOrSize?: string; size?: string }) =>
+                    (v.name || v.weightOrSize || v.size)?.trim()
+                )
+                .map((v: {
+                    name?: string;
+                    weightOrSize?: string;
+                    size?: string;
+                    sku?: string;
+                    displayOrder?: number;
+                    imageId?: string;
+                }, idx: number) => ({
+                    name: (v.name || "Default Variant").trim(),
+                    weightOrSize: (v.weightOrSize || v.size || "Default").trim(),
+                    sku: v.sku?.trim() || null,
+                    displayOrder: typeof v.displayOrder === "number" ? v.displayOrder : idx + 1,
+                    imageId: v.imageId?.trim() || null,
+                }))
+            : [];
 
         const newProduct = await prisma.product.create({
             data: {
-                name,
-                slug,
-                shortDescription: shortDescription || description || null,
-                fullDescription: fullDescription || description || null,
-                categoryId,
-                brandId,
-                thumbnailImageId,
-                specifications: specsToCreate && specsToCreate.length > 0 ? { create: specsToCreate } : undefined,
-                features: features ? { create: features } : undefined,
-                applications: applications ? { create: applications } : undefined,
-                variants: variants ? { create: variants } : undefined,
+                name: name.trim(),
+                slug: slug.trim(),
+                shortDescription: shortDescription?.trim() || description?.trim() || null,
+                fullDescription: fullDescription?.trim() || description?.trim() || null,
+                categoryId: categoryId || null,
+                brandId: brandId || null,
+                thumbnailImageId: sanitizedThumbnailImageId,
+                specifications: specsToCreate.length > 0 ? { create: specsToCreate } : undefined,
+                features: featuresToCreate.length > 0 ? { create: featuresToCreate } : undefined,
+                applications: applicationsToCreate.length > 0 ? { create: applicationsToCreate } : undefined,
+                variants: variantsToCreate.length > 0 ? { create: variantsToCreate } : undefined,
             },
             include: {
                 brand: true,
@@ -134,15 +184,23 @@ export async function POST(request: NextRequest) {
                 images: { orderBy: { displayOrder: "asc" } },
                 variants: { orderBy: { displayOrder: "asc" } },
                 specifications: { orderBy: { displayOrder: "asc" } },
+                features: { orderBy: { displayOrder: "asc" } },
+                applications: { orderBy: { displayOrder: "asc" } },
             },
         });
 
         return NextResponse.json(newProduct, { status: 201 });
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("POST /api/products error:", error);
-        return NextResponse.json(
-            { error: "Failed to create product" },
-            { status: 500 }
-        );
+
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+            return NextResponse.json(
+                { error: "A product with this slug already exists." },
+                { status: 400 }
+            );
+        }
+
+        const message = error instanceof Error ? error.message : "Failed to create product";
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
