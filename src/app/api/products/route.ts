@@ -88,7 +88,11 @@ export async function POST(request: NextRequest) {
             fullDescription,
             categoryId,
             brandId,
+            isFeatured,
+            isLatest,
             thumbnailImageId,
+            thumbnailImage,
+            images,
             specifications,
             features,
             applications,
@@ -103,7 +107,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Validate if thumbnailImageId exists in ProductImage table
-        let validThumbnailImageId: string | null = null;
+        let validThumbnailImageId: string | undefined = undefined;
         if (typeof thumbnailImageId === "string" && thumbnailImageId.trim() !== "") {
             const existingImage = await prisma.productImage.findUnique({
                 where: { id: thumbnailImageId.trim() },
@@ -113,7 +117,7 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // 1. Sanitize specifications (label, value)
+        // Sanitize specifications
         const specsToCreate = Array.isArray(specifications)
             ? specifications
                 .filter((s: { label?: string; value?: string }) => s.label?.trim() && s.value?.trim())
@@ -124,7 +128,7 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
-        // 2. Sanitize features
+        // Sanitize features
         const featuresToCreate = Array.isArray(features)
             ? features
                 .filter((f: { feature?: string; text?: string }) => (f.feature || f.text)?.trim())
@@ -134,7 +138,7 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
-        // 3. Sanitize applications
+        // Sanitize applications
         const applicationsToCreate = Array.isArray(applications)
             ? applications
                 .filter((a: { application?: string; text?: string; name?: string }) =>
@@ -146,7 +150,7 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
-        // 4. Sanitize variants
+        // Sanitize variants
         const variantsToCreate = Array.isArray(variants)
             ? variants
                 .filter((v: { name?: string; weightOrSize?: string; size?: string }) =>
@@ -168,20 +172,54 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
+        // Sanitize gallery images
+        const galleryToCreate = Array.isArray(images)
+            ? images
+                .filter((img: { secureUrl?: string }) => img.secureUrl?.trim())
+                .map((img: { secureUrl: string; publicId?: string; altText?: string }, idx: number) => ({
+                    cloudinaryPublicId: img.publicId || `prod_gallery_${Date.now()}_${idx}`,
+                    secureUrl: img.secureUrl.trim(),
+                    altText: img.altText || null,
+                    displayOrder: idx + 1,
+                    isThumbnail: false,
+                }))
+            : [];
+
+        // Build strictly-typed ProductCreateInput payload
+        const productData: Prisma.ProductCreateInput = {
+            name: name.trim(),
+            slug: slug.trim(),
+            shortDescription: shortDescription?.trim() || description?.trim() || null,
+            fullDescription: fullDescription?.trim() || description?.trim() || null,
+            isFeatured: typeof isFeatured === "boolean" ? isFeatured : false,
+            isLatest: typeof isLatest === "boolean" ? isLatest : false,
+            category: categoryId ? { connect: { id: categoryId } } : undefined,
+            brand: brandId ? { connect: { id: brandId } } : undefined,
+            images: galleryToCreate.length > 0 ? { create: galleryToCreate } : undefined,
+            specifications: specsToCreate.length > 0 ? { create: specsToCreate } : undefined,
+            features: featuresToCreate.length > 0 ? { create: featuresToCreate } : undefined,
+            applications: applicationsToCreate.length > 0 ? { create: applicationsToCreate } : undefined,
+            variants: variantsToCreate.length > 0 ? { create: variantsToCreate } : undefined,
+        };
+
+        // Handle thumbnail creation or connection cleanly
+        if (thumbnailImage && typeof thumbnailImage === "object" && thumbnailImage.secureUrl) {
+            const imgData = thumbnailImage as { secureUrl: string; publicId?: string };
+            productData.thumbnailImage = {
+                create: {
+                    cloudinaryPublicId: imgData.publicId || `prod_thumb_${Date.now()}`,
+                    secureUrl: imgData.secureUrl,
+                    isThumbnail: true,
+                },
+            };
+        } else if (validThumbnailImageId) {
+            productData.thumbnailImage = {
+                connect: { id: validThumbnailImageId },
+            };
+        }
+
         const newProduct = await prisma.product.create({
-            data: {
-                name: name.trim(),
-                slug: slug.trim(),
-                shortDescription: shortDescription?.trim() || description?.trim() || null,
-                fullDescription: fullDescription?.trim() || description?.trim() || null,
-                categoryId: categoryId || null,
-                brandId: brandId || null,
-                thumbnailImageId: validThumbnailImageId, // ✅ Null if non-existent in ProductImage
-                specifications: specsToCreate.length > 0 ? { create: specsToCreate } : undefined,
-                features: featuresToCreate.length > 0 ? { create: featuresToCreate } : undefined,
-                applications: applicationsToCreate.length > 0 ? { create: applicationsToCreate } : undefined,
-                variants: variantsToCreate.length > 0 ? { create: variantsToCreate } : undefined,
-            },
+            data: productData,
             include: {
                 brand: true,
                 category: true,
