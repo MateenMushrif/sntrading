@@ -4,6 +4,10 @@ import FeaturedProducts from "@/components/home/FeaturedProducts";
 import { prisma } from "@/lib/prisma";
 import { Product } from "@/types/product";
 
+// Force Next.js to fetch fresh live data from Neon DB on every page request
+export const revalidate = 0;
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const categories = await prisma.category.findMany({
     where: {
