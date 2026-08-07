@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { validateDeviceToken } from "@/lib/auth";
 
-// Helper to safely parse boolean inputs from JSON or Form payloads
-function parseBoolean(val: unknown): boolean | undefined {
+// ✅ Helper function to parse boolean values from JSON payloads or strings
+function parseBoolean(val: unknown): boolean {
     if (typeof val === "boolean") return val;
     if (typeof val === "string") {
         const trimmed = val.trim().toLowerCase();
@@ -12,7 +12,7 @@ function parseBoolean(val: unknown): boolean | undefined {
         if (trimmed === "false" || trimmed === "0") return false;
     }
     if (typeof val === "number") return val === 1;
-    return undefined;
+    return false;
 }
 
 export async function GET(request: NextRequest) {
@@ -201,8 +201,8 @@ export async function POST(request: NextRequest) {
             slug: slug.trim(),
             shortDescription: shortDescription?.trim() || description?.trim() || null,
             fullDescription: fullDescription?.trim() || description?.trim() || null,
-            isFeatured: parseBoolean(isFeatured) ?? false, // ✅ Parses boolean or string "true"/"false"
-            isLatest: parseBoolean(isLatest) ?? false,
+            isFeatured: parseBoolean(isFeatured), // ✅ Safely parses boolean values
+            isLatest: parseBoolean(isLatest),
             category: categoryId ? { connect: { id: categoryId } } : undefined,
             brand: brandId ? { connect: { id: brandId } } : undefined,
             images: galleryToCreate.length > 0 ? { create: galleryToCreate } : undefined,
