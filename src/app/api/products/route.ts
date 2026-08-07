@@ -102,11 +102,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Sanitize thumbnailImageId: convert empty string "" to null to avoid Foreign Key error
-        const sanitizedThumbnailImageId =
-            typeof thumbnailImageId === "string" && thumbnailImageId.trim() !== ""
-                ? thumbnailImageId.trim()
-                : null;
+        // Validate if thumbnailImageId exists in ProductImage table
+        let validThumbnailImageId: string | null = null;
+        if (typeof thumbnailImageId === "string" && thumbnailImageId.trim() !== "") {
+            const existingImage = await prisma.productImage.findUnique({
+                where: { id: thumbnailImageId.trim() },
+            });
+            if (existingImage) {
+                validThumbnailImageId = existingImage.id;
+            }
+        }
 
         // 1. Sanitize specifications (label, value)
         const specsToCreate = Array.isArray(specifications)
@@ -119,7 +124,7 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
-        // 2. Sanitize features -> matches model ProductFeature { feature: String }
+        // 2. Sanitize features
         const featuresToCreate = Array.isArray(features)
             ? features
                 .filter((f: { feature?: string; text?: string }) => (f.feature || f.text)?.trim())
@@ -129,7 +134,7 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
-        // 3. Sanitize applications -> matches model ProductApplication { application: String }
+        // 3. Sanitize applications
         const applicationsToCreate = Array.isArray(applications)
             ? applications
                 .filter((a: { application?: string; text?: string; name?: string }) =>
@@ -141,7 +146,7 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
-        // 4. Sanitize variants -> matches model ProductVariant { name, weightOrSize, sku, imageId }
+        // 4. Sanitize variants
         const variantsToCreate = Array.isArray(variants)
             ? variants
                 .filter((v: { name?: string; weightOrSize?: string; size?: string }) =>
@@ -171,7 +176,7 @@ export async function POST(request: NextRequest) {
                 fullDescription: fullDescription?.trim() || description?.trim() || null,
                 categoryId: categoryId || null,
                 brandId: brandId || null,
-                thumbnailImageId: sanitizedThumbnailImageId,
+                thumbnailImageId: validThumbnailImageId, // ✅ Null if non-existent in ProductImage
                 specifications: specsToCreate.length > 0 ? { create: specsToCreate } : undefined,
                 features: featuresToCreate.length > 0 ? { create: featuresToCreate } : undefined,
                 applications: applicationsToCreate.length > 0 ? { create: applicationsToCreate } : undefined,
