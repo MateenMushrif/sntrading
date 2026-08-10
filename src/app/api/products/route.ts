@@ -35,6 +35,10 @@ export async function GET(request: NextRequest) {
             where.OR = [
                 { name: { contains: search, mode: "insensitive" } },
                 { shortDescription: { contains: search, mode: "insensitive" } },
+                { category: { name: { contains: search, mode: "insensitive" } } },
+                { brand: { name: { contains: search, mode: "insensitive" } } },
+                { variants: { some: { sku: { contains: search, mode: "insensitive" } } } },
+                { variants: { some: { name: { contains: search, mode: "insensitive" } } } },
             ];
         }
 

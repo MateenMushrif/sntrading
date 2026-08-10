@@ -1,3 +1,5 @@
+// D:\SN trading\sntrading\src\components\layout\HeaderSearch.tsx
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -36,14 +38,12 @@ export default function HeaderSearch() {
     const router = useRouter();
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Derived state check: reset dropdown when query is short
     const isQueryValid = query.trim().length >= 2;
     if (!isQueryValid && (results.products.length > 0 || results.categories.length > 0 || isOpen)) {
         setResults({ products: [], categories: [] });
         setIsOpen(false);
     }
 
-    // Debounced search fetcher
     useEffect(() => {
         if (!isQueryValid) return;
 
@@ -70,7 +70,6 @@ export default function HeaderSearch() {
         return () => clearTimeout(timer);
     }, [query, isQueryValid]);
 
-    // Close dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -82,7 +81,7 @@ export default function HeaderSearch() {
     }, []);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        const totalItems = results.products.length + results.categories.length;
+        const totalItems = results.products.length;
 
         if (e.key === "ArrowDown") {
             e.preventDefault();
@@ -126,7 +125,6 @@ export default function HeaderSearch() {
 
     return (
         <div ref={dropdownRef} className="relative w-full z-50">
-            {/* Search Input Box */}
             <form onSubmit={handleSearchSubmit} className="relative w-full">
                 <input
                     type="text"
@@ -161,12 +159,11 @@ export default function HeaderSearch() {
                 )}
             </form>
 
-            {/* Live Suggestion Dropdown */}
             {isOpen && hasResults && (
                 <div className="absolute top-full mt-2 left-0 w-full sm:w-80 sm:-left-8 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col ring-1 ring-black/5 z-50">
                     <div className="h-1 w-full bg-amber-400" />
 
-                    {/* Categories Section */}
+                    {/* Category Quick Filters */}
                     {results.categories.length > 0 && (
                         <div className="p-2.5 bg-slate-50 border-b border-slate-200">
                             <span className="text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
@@ -188,7 +185,7 @@ export default function HeaderSearch() {
                         </div>
                     )}
 
-                    {/* Products List */}
+                    {/* Product Suggestions */}
                     {results.products.length > 0 && (
                         <div className="p-2 max-h-80 overflow-y-auto space-y-1">
                             <span className="text-xs font-extrabold uppercase tracking-widest text-slate-400 px-2 py-1 block">
@@ -211,7 +208,6 @@ export default function HeaderSearch() {
                                                 : "hover:bg-slate-50 border-l-2 border-transparent text-slate-800"
                                             }`}
                                     >
-                                        {/* Thumbnail */}
                                         <div className="relative w-10 h-10 rounded-md border border-slate-200 bg-slate-100 overflow-hidden shrink-0 shadow-sm">
                                             <Image
                                                 src={imgSrc}
@@ -222,7 +218,6 @@ export default function HeaderSearch() {
                                             />
                                         </div>
 
-                                        {/* Content */}
                                         <div className="flex-1 min-w-0 pt-0.5">
                                             <div className="flex items-start justify-between gap-2">
                                                 <h4 className="text-xs font-bold truncate leading-tight text-slate-900">
@@ -256,7 +251,6 @@ export default function HeaderSearch() {
                         </div>
                     )}
 
-                    {/* Bottom Action Bar */}
                     <Link
                         href={`/products?search=${encodeURIComponent(query)}`}
                         onClick={() => setIsOpen(false)}
