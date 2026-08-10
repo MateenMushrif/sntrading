@@ -17,15 +17,15 @@ export default function Breadcrumbs() {
     const isIdString = (str: string) => /^[a-z0-9]{20,}$/i.test(str) || /^[0-9a-f-]{36}$/i.test(str);
 
     return (
-        <div className="w-full bg-slate-50 border-b border-slate-200">
-            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-2.5">
+        <div className="w-full bg-slate-100/70 border-b border-slate-200/80 backdrop-blur-xs">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-2">
                 <nav aria-label="Breadcrumb">
                     <ol className="flex items-center flex-wrap gap-1.5 text-xs font-medium text-slate-500">
                         {/* Home Link */}
                         <li>
                             <Link
                                 href="/"
-                                className="flex items-center gap-1 hover:text-amber-500 transition-colors"
+                                className="flex items-center gap-1 hover:text-amber-600 transition-colors"
                             >
                                 <Home className="w-3.5 h-3.5" />
                                 <span className="sr-only">Home</span>
@@ -47,7 +47,7 @@ export default function Breadcrumbs() {
 
                             return (
                                 <li key={href} className="flex items-center gap-1.5">
-                                    <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                                    <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                     {isLast ? (
                                         <span className="font-bold text-slate-900 truncate max-w-xs">
                                             {formattedLabel}
@@ -55,7 +55,7 @@ export default function Breadcrumbs() {
                                     ) : (
                                         <Link
                                             href={href}
-                                            className="hover:text-amber-500 transition-colors whitespace-nowrap"
+                                            className="hover:text-amber-600 transition-colors whitespace-nowrap"
                                         >
                                             {formattedLabel}
                                         </Link>
