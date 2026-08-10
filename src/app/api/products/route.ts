@@ -16,6 +16,7 @@ function parseBoolean(val: unknown): boolean {
     return false;
 }
 
+// 1️⃣ FAST LIGHTWEIGHT LISTING QUERY (Only exact fields needed for ProductCard.tsx)
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
@@ -26,27 +27,18 @@ export async function GET(request: NextRequest) {
         const search = searchParams.get("search")?.trim();
 
         const skip = (page - 1) * limit;
-
         const where: Prisma.ProductWhereInput = {};
 
-        if (categorySlug) {
-            where.category = { slug: categorySlug };
-        }
-
-        if (brandSlug) {
-            where.brand = { slug: brandSlug };
-        }
-
+        if (categorySlug) where.category = { slug: categorySlug };
+        if (brandSlug) where.brand = { slug: brandSlug };
         if (search) {
             where.OR = [
                 { name: { contains: search, mode: "insensitive" } },
                 { shortDescription: { contains: search, mode: "insensitive" } },
-                { variants: { some: { sku: { contains: search, mode: "insensitive" } } } },
-                { variants: { some: { name: { contains: search, mode: "insensitive" } } } },
             ];
         }
 
-        // ✅ Ultra-lightweight card projection (Zero JOINs on variants/specs during listing)
+        // ✅ Ultra-light selection (Zero JOINs on variants, specs, or gallery images)
         const [products, total] = await Promise.all([
             prisma.product.findMany({
                 where,
@@ -57,23 +49,10 @@ export async function GET(request: NextRequest) {
                     name: true,
                     slug: true,
                     shortDescription: true,
-                    status: true,
-                    isFeatured: true,
-                    isLatest: true,
-                    displayOrder: true,
-                    createdAt: true,
                     category: {
                         select: { id: true, name: true, slug: true },
                     },
-                    brand: {
-                        select: { id: true, name: true, slug: true },
-                    },
                     thumbnailImage: {
-                        select: { id: true, secureUrl: true, altText: true },
-                    },
-                    // Fetch only 1 fallback gallery image if thumbnail is null
-                    images: {
-                        take: 1,
                         select: { id: true, secureUrl: true, altText: true },
                     },
                 },
@@ -94,20 +73,18 @@ export async function GET(request: NextRequest) {
             },
             {
                 headers: {
-                    // ✅ Aggressive Edge CDN Caching
+                    // Cache CDN responses for 2 minutes
                     "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600",
                 },
             }
         );
     } catch (error) {
         console.error("GET /api/products error:", error);
-        return NextResponse.json(
-            { error: "Failed to fetch products" },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
     }
 }
 
+// 2️⃣ POST ROUTE FOR PRODUCT CREATION
 export async function POST(request: NextRequest) {
     const auth = await validateDeviceToken(request);
     if (!auth.isValid) {
