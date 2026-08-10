@@ -3,7 +3,7 @@
 import { useState, useEffect, TouchEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { X, ChevronLeft, ChevronRight, MessageSquarePlus, Check, ArrowRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, MessageSquarePlus, Check, ArrowRight, Loader2 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Product, CloudinaryImage, CategoryRelation } from "@/types/product";
 
@@ -15,12 +15,71 @@ interface QuickViewModalProps {
 
 export default function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps) {
     const { addToCart } = useCart();
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [touchStartX, setTouchStartX] = useState<number | null>(null);
-    const [added, setAdded] = useState(false);
 
     const active = isOpen ?? Boolean(product);
 
+    // Track current product ID during render to reset state without useEffect
+    const [prevProductId, setPrevProductId] = useState<string | null>(null);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [fetchedDetails, setFetchedDetails] = useState<Product | null>(null);
+    const [loadingDetails, setLoadingDetails] = useState(false);
+
+    const [touchStartX, setTouchStartX] = useState<number | null>(null);
+    const [added, setAdded] = useState(false);
+
+    // ✅ React Recommended Pattern: Reset state synchronously during render when prop ID changes
+    const currentProductId = product?.id || null;
+    if (currentProductId !== prevProductId) {
+        setPrevProductId(currentProductId);
+        setCurrentImageIndex(0);
+        setFetchedDetails(null);
+        setLoadingDetails(false);
+    }
+
+    // Merge prop data with dynamically fetched details
+    const targetProduct = (fetchedDetails && fetchedDetails.id === product?.id) ? fetchedDetails : product;
+
+    // Fetch extra details in background ONLY if missing specs/gallery images
+    useEffect(() => {
+        if (!product || !active) return;
+
+        // Skip fetch if product already has detailed specifications or gallery images
+        if (
+            (Array.isArray(product.specifications) && product.specifications.length > 0) ||
+            (Array.isArray(product.images) && product.images.length > 1)
+        ) {
+            return;
+        }
+
+        let isMounted = true;
+        const identifier = product.slug || product.id;
+
+        // Avoid synchronous setState in effect body by wrapping or setting inside promise
+        Promise.resolve().then(() => {
+            if (isMounted) setLoadingDetails(true);
+        });
+
+        fetch(`/api/products/${identifier}`)
+            .then((res) => {
+                if (!res.ok) throw new Error("Failed to load details");
+                return res.json();
+            })
+            .then((data) => {
+                if (isMounted && data && !data.error) {
+                    setFetchedDetails(data);
+                }
+            })
+            .catch((err) => console.error("QuickView lazy load error:", err))
+            .finally(() => {
+                if (isMounted) setLoadingDetails(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [product, active]);
+
+    // Prevent background scrolling when modal is active
     useEffect(() => {
         if (active) {
             document.body.style.overflow = "hidden";
@@ -32,29 +91,29 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
         };
     }, [active]);
 
-    if (!active || !product) {
+    if (!active || !targetProduct) {
         return null;
     }
 
     const categoryObj: CategoryRelation =
-        typeof product.category === "object" && product.category !== null
-            ? product.category
+        typeof targetProduct.category === "object" && targetProduct.category !== null
+            ? targetProduct.category
             : {
                 id: "gen",
-                name: typeof product.category === "string" ? product.category : "General",
+                name: typeof targetProduct.category === "string" ? targetProduct.category : "General",
                 slug: "general",
             };
 
     const categoryName = categoryObj.name;
 
-    // Deduplicate thumbnail and gallery images cleanly
+    // Deduplicate thumbnail and gallery images
     const rawImages: CloudinaryImage[] = [];
-    if (product.thumbnailImage?.secureUrl) {
-        rawImages.push(product.thumbnailImage);
+    if (targetProduct.thumbnailImage?.secureUrl) {
+        rawImages.push(targetProduct.thumbnailImage);
     }
-    if (Array.isArray(product.images) && product.images.length > 0) {
-        product.images.forEach((img) => {
-            if (img?.secureUrl && img.secureUrl !== product.thumbnailImage?.secureUrl) {
+    if (Array.isArray(targetProduct.images) && targetProduct.images.length > 0) {
+        targetProduct.images.forEach((img) => {
+            if (img?.secureUrl && img.secureUrl !== targetProduct.thumbnailImage?.secureUrl) {
                 rawImages.push(img);
             }
         });
@@ -63,7 +122,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
     const images =
         rawImages.length > 0
             ? rawImages
-            : [{ secureUrl: "/placeholder-ingredient.png", altText: product.name }];
+            : [{ secureUrl: "/placeholder-product.png", altText: targetProduct.name }];
 
     const safeIndex = currentImageIndex % images.length;
     const currentImg = images[safeIndex] || images[0];
@@ -80,11 +139,9 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
         setTouchStartX(null);
     };
 
-    // Normalize specifications into uniform [{ label, value }] array
     const normalizedSpecs: Array<{ label: string; value: string }> = [];
-
-    if (Array.isArray(product.specifications)) {
-        product.specifications.forEach((spec) => {
+    if (Array.isArray(targetProduct.specifications)) {
+        targetProduct.specifications.forEach((spec) => {
             if (spec && typeof spec === "object" && spec.value) {
                 const label = spec.label || spec.value;
                 normalizedSpecs.push({ label, value: String(spec.value) });
@@ -93,22 +150,19 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
     }
 
     const handleAddToCart = () => {
-        addToCart(product);
+        addToCart(targetProduct);
         setAdded(true);
         setTimeout(() => setAdded(false), 2000);
     };
 
     return (
         <div
-            key={product.id}
+            key={targetProduct.id}
             className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm transition-opacity duration-200"
         >
-            {/* Backdrop */}
             <div className="absolute inset-0 cursor-pointer" onClick={onClose} aria-hidden="true" />
 
-            {/* Main Modal Box */}
             <div className="relative z-10 w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-200">
-                {/* Close Button */}
                 <button
                     type="button"
                     onClick={onClose}
@@ -118,31 +172,28 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                     <X className="w-4 h-4" />
                 </button>
 
-                {/* LEFT COLUMN: 1:1 Aspect Ratio Gallery */}
+                {/* LEFT COLUMN: Aspect Ratio Image Frame */}
                 <div
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                     className="relative w-full md:w-1/2 aspect-square bg-slate-950 flex flex-col items-center justify-between border-b md:border-b-0 md:border-r border-gray-200 select-none overflow-hidden shrink-0 group"
                 >
-                    {/* Badge */}
                     <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 pointer-events-none">
                         <span className="bg-amber-400 text-slate-950 text-xs font-extrabold uppercase tracking-widest px-2 py-0.5 rounded shadow-sm">
                             SN Wholesale
                         </span>
                     </div>
 
-                    {/* Active Image (Strict 1:1 Fit) */}
                     <div className="relative w-full h-full">
                         <Image
                             src={currentImg.secureUrl}
-                            alt={currentImg.altText || product.name}
+                            alt={currentImg.altText || targetProduct.name}
                             fill
                             sizes="(max-width: 768px) 100vw, 50vw"
                             className="object-cover transition-all duration-300"
                         />
                     </div>
 
-                    {/* Left/Right Glass Navigation Buttons */}
                     {images.length > 1 && (
                         <>
                             <button
@@ -169,7 +220,6 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                                 <ChevronRight className="w-5 h-5" />
                             </button>
 
-                            {/* Dots Indicator */}
                             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-slate-900/40 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/10">
                                 {images.map((_, idx) => (
                                     <button
@@ -193,19 +243,29 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                 {/* RIGHT COLUMN: Details */}
                 <div className="w-full md:w-1/2 p-5 md:p-6 flex flex-col justify-between overflow-y-auto bg-white">
                     <div>
-                        <span className="text-xs font-bold uppercase tracking-widest text-amber-600 block mb-0.5">
-                            {categoryName}
-                        </span>
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold uppercase tracking-widest text-amber-600 block mb-0.5">
+                                {categoryName}
+                            </span>
+                            {loadingDetails && (
+                                <span className="inline-flex items-center gap-1 text-2xs text-slate-400 font-semibold">
+                                    <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
+                                    <span>Syncing...</span>
+                                </span>
+                            )}
+                        </div>
+
                         <h2 className="text-lg md:text-xl font-bold text-slate-900 mb-1.5 leading-snug">
-                            {product.name}
+                            {targetProduct.name}
                         </h2>
-                        {product.shortDescription || product.fullDescription ? (
+                        {targetProduct.shortDescription || targetProduct.fullDescription ? (
                             <p className="text-gray-600 text-xs leading-relaxed mb-4 line-clamp-3">
-                                {product.shortDescription || product.fullDescription}
+                                {targetProduct.shortDescription || targetProduct.fullDescription}
                             </p>
                         ) : null}
 
-                        {normalizedSpecs.length > 0 && (
+                        {/* Specs Section */}
+                        {normalizedSpecs.length > 0 ? (
                             <div className="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-2">
                                     Specifications
@@ -223,7 +283,15 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                                     ))}
                                 </dl>
                             </div>
-                        )}
+                        ) : loadingDetails ? (
+                            <div className="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-200 animate-pulse space-y-2">
+                                <div className="h-3 w-20 bg-slate-200 rounded" />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="h-6 bg-slate-200 rounded" />
+                                    <div className="h-6 bg-slate-200 rounded" />
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
 
                     <div className="pt-3 border-t border-gray-100 flex flex-col sm:flex-row items-center gap-2.5 mt-auto">
@@ -240,7 +308,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                         </button>
 
                         <Link
-                            href={`/products/${product.slug}`}
+                            href={`/products/${targetProduct.slug}`}
                             onClick={onClose}
                             className="w-full sm:w-auto text-center text-xs font-bold text-slate-900 hover:text-amber-600 border border-gray-300 hover:border-amber-400 py-2.5 px-4 rounded-xl flex items-center justify-center gap-1 transition-colors"
                         >

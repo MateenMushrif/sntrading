@@ -1,5 +1,6 @@
 "use client";
 
+import React, { memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { MessageSquarePlus } from "lucide-react";
@@ -11,7 +12,7 @@ interface ProductCardProps {
     onQuickView: (product: Product) => void;
 }
 
-export default function ProductCard({ product, onQuickView }: ProductCardProps) {
+function ProductCardComponent({ product, onQuickView }: ProductCardProps) {
     const { addToCart } = useCart();
 
     const handleCardClick = (e: React.MouseEvent) => {
@@ -23,7 +24,7 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
     const imageUrl =
         product.thumbnailImage?.secureUrl ||
         product.images?.[0]?.secureUrl ||
-        "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg";
+        "/placeholder-product.png";
 
     const categoryName =
         typeof product.category === "object" && product.category !== null
@@ -86,11 +87,15 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
                         {product.name}
                     </Link>
 
-                    <p className="text-gray-500 text-xs line-clamp-2 leading-relaxed">
-                        {product.shortDescription}
-                    </p>
+                    {product.shortDescription && (
+                        <p className="text-gray-500 text-xs line-clamp-2 leading-relaxed">
+                            {product.shortDescription}
+                        </p>
+                    )}
                 </div>
             </div>
         </div>
     );
 }
+
+export default memo(ProductCardComponent);
