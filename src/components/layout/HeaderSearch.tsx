@@ -30,7 +30,9 @@ export default function HeaderSearch() {
         products: SearchResultProduct[];
         categories: SearchResultCategory[];
     }>({ products: [], categories: [] });
+
     const [isOpen, setIsOpen] = useState(false);
+    const [isDismissed, setIsDismissed] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
 
     const router = useRouter();
@@ -39,12 +41,12 @@ export default function HeaderSearch() {
     const inputRef = useRef<HTMLInputElement>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Sync route change: close and clear search dropdown when page changes
+    // ✅ React Recommended Pattern: Reset state during render pass when route changes (Zero useEffect warnings)
     const [prevPathname, setPrevPathname] = useState(pathname);
     if (pathname !== prevPathname) {
         setPrevPathname(pathname);
+        setIsDismissed(true);
         setIsOpen(false);
-        setResults({ products: [], categories: [] });
     }
 
     const isQueryValid = query.trim().length >= 2;
@@ -55,15 +57,17 @@ export default function HeaderSearch() {
         setIsOpen(false);
     }
 
-    // Helper to immediately cancel pending fetches and close the modal
-    const closeAndResetSearch = () => {
+    // Helper to immediately close the dropdown & kill any pending async callbacks
+    const closeSearchDropdown = () => {
+        setIsDismissed(true);
+        setIsOpen(false);
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
         }
-        setIsOpen(false);
-        setResults({ products: [], categories: [] });
-        inputRef.current?.blur();
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
     };
 
     // Debounced search fetcher
@@ -101,12 +105,25 @@ export default function HeaderSearch() {
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setIsDismissed(true);
                 setIsOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setQuery(e.target.value);
+        setIsDismissed(false);
+    };
+
+    const handleInputFocus = () => {
+        if (isQueryValid) {
+            setIsDismissed(false);
+            setIsOpen(true);
+        }
+    };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         const totalItems = results.products.length + results.categories.length;
@@ -122,34 +139,34 @@ export default function HeaderSearch() {
                 e.preventDefault();
                 const p = results.products[selectedIndex];
                 if (p?.slug) {
-                    closeAndResetSearch();
+                    closeSearchDropdown();
                     router.push(`/products/${p.slug}`);
                 }
             } else if (query.trim()) {
                 e.preventDefault();
-                closeAndResetSearch();
+                closeSearchDropdown();
                 router.push(`/products?search=${encodeURIComponent(query.trim())}`);
             }
         } else if (e.key === "Escape") {
-            closeAndResetSearch();
+            closeSearchDropdown();
         }
     };
 
     const handleClear = () => {
         setQuery("");
-        closeAndResetSearch();
-        inputRef.current?.focus();
+        setResults({ products: [], categories: [] });
+        closeSearchDropdown();
     };
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (query.trim()) {
-            closeAndResetSearch();
+            closeSearchDropdown();
             router.push(`/products?search=${encodeURIComponent(query.trim())}`);
         }
     };
 
-    const hasResults = results.products.length > 0 || results.categories.length > 0;
+    const showDropdown = isOpen && !isDismissed && (results.products.length > 0 || results.categories.length > 0);
 
     return (
         <div ref={dropdownRef} className="relative w-full z-50">
@@ -160,8 +177,8 @@ export default function HeaderSearch() {
                     type="text"
                     placeholder="Search ingredients, brands..."
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onFocus={() => isQueryValid && setIsOpen(true)}
+                    onChange={handleInputChange}
+                    onFocus={handleInputFocus}
                     onKeyDown={handleKeyDown}
                     className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs rounded-full pl-4 pr-9 py-1.5 focus:outline-none transition-all placeholder:text-slate-400 shadow-inner"
                 />
@@ -190,7 +207,7 @@ export default function HeaderSearch() {
             </form>
 
             {/* Live Suggestion Dropdown */}
-            {isOpen && hasResults && (
+            {showDropdown && (
                 <div className="absolute top-full mt-2 left-0 w-full sm:w-80 sm:-left-8 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col ring-1 ring-black/5 z-50">
                     <div className="h-1 w-full bg-amber-400" />
 
@@ -205,7 +222,7 @@ export default function HeaderSearch() {
                                     <Link
                                         key={cat.id}
                                         href={`/products?category=${cat.slug}`}
-                                        onClick={closeAndResetSearch}
+                                        onClick={closeSearchDropdown}
                                         className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-800 hover:border-amber-400 hover:text-amber-600 shadow-sm transition-all"
                                     >
                                         <Tag className="w-2.5 h-2.5 text-amber-500" />
@@ -233,13 +250,12 @@ export default function HeaderSearch() {
                                     <Link
                                         key={p.id}
                                         href={`/products/${p.slug}`}
-                                        onClick={closeAndResetSearch}
+                                        onClick={closeSearchDropdown}
                                         className={`flex items-start gap-3 p-2 rounded-lg transition-all ${isSelected
                                                 ? "bg-amber-50 border-l-2 border-amber-500 text-slate-900"
                                                 : "hover:bg-slate-50 border-l-2 border-transparent text-slate-800"
                                             }`}
                                     >
-                                        {/* Thumbnail */}
                                         <div className="relative w-10 h-10 rounded-md border border-slate-200 bg-slate-100 overflow-hidden shrink-0 shadow-sm">
                                             <Image
                                                 src={imgSrc}
@@ -250,7 +266,6 @@ export default function HeaderSearch() {
                                             />
                                         </div>
 
-                                        {/* Content */}
                                         <div className="flex-1 min-w-0 pt-0.5">
                                             <div className="flex items-start justify-between gap-2">
                                                 <h4 className="text-xs font-bold truncate leading-tight text-slate-900">
@@ -287,7 +302,7 @@ export default function HeaderSearch() {
                     {/* Bottom Action Bar */}
                     <Link
                         href={`/products?search=${encodeURIComponent(query)}`}
-                        onClick={closeAndResetSearch}
+                        onClick={closeSearchDropdown}
                         className="block text-center py-2.5 bg-slate-900 text-xs font-bold text-amber-400 hover:bg-slate-950 transition-colors border-t border-slate-100"
                     >
                         View all results for &quot;{query}&quot; →
