@@ -7,12 +7,15 @@ import { Product } from "@/types/product";
 
 interface ProductGridProps {
     products: Product[];
+    gridClassName?: string;
 }
 
-export default function ProductGrid({ products }: ProductGridProps) {
+export default function ProductGrid({
+    products,
+    gridClassName = "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6",
+}: ProductGridProps) {
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-    // ✅ Memoize callbacks so React.memo(ProductCard) actually prevents re-renders
     const handleOpenQuickView = useCallback((product: Product) => {
         setSelectedProduct(product);
     }, []);
@@ -23,7 +26,7 @@ export default function ProductGrid({ products }: ProductGridProps) {
 
     return (
         <div className="w-full relative">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className={`grid ${gridClassName}`}>
                 {products && products.length > 0 ? (
                     products.map((product) => (
                         <ProductCard
@@ -40,7 +43,6 @@ export default function ProductGrid({ products }: ProductGridProps) {
                 )}
             </div>
 
-            {/* ✅ Derived isOpen state from selectedProduct */}
             <QuickViewModal
                 product={selectedProduct}
                 isOpen={Boolean(selectedProduct)}
