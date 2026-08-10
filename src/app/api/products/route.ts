@@ -50,14 +50,29 @@ export async function GET(request: NextRequest) {
                 where,
                 skip,
                 take: limit,
-                // ✅ Optimized include: Pulls only list-essential relations
-                // Drops heavy gallery images, specifications, features, & applications
-                include: {
-                    brand: true,
-                    category: true,
-                    thumbnailImage: true,
+                // ✅ Selective DB fields for high-speed listing queries
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    shortDescription: true,
+                    status: true,
+                    isFeatured: true,
+                    isLatest: true,
+                    displayOrder: true,
+                    createdAt: true,
+                    brand: {
+                        select: { id: true, name: true, slug: true, logo: true },
+                    },
+                    category: {
+                        select: { id: true, name: true, slug: true },
+                    },
+                    thumbnailImage: {
+                        select: { id: true, secureUrl: true, altText: true },
+                    },
                     variants: {
                         orderBy: { displayOrder: "asc" },
+                        select: { id: true, name: true, weightOrSize: true, sku: true, displayOrder: true },
                     },
                 },
                 orderBy: { createdAt: "desc" },
@@ -65,15 +80,23 @@ export async function GET(request: NextRequest) {
             prisma.product.count({ where }),
         ]);
 
-        return NextResponse.json({
-            data: products,
-            pagination: {
-                total,
-                page,
-                limit,
-                totalPages: Math.ceil(total / limit),
+        return NextResponse.json(
+            {
+                data: products,
+                pagination: {
+                    total,
+                    page,
+                    limit,
+                    totalPages: Math.ceil(total / limit),
+                },
             },
-        });
+            {
+                headers: {
+                    // ✅ Edge caching: cached at CDN for 60s, stale-while-revalidate for 300s
+                    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+                },
+            }
+        );
     } catch (error) {
         console.error("GET /api/products error:", error);
         return NextResponse.json(

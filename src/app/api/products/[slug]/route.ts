@@ -240,7 +240,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
             return NextResponse.json(
-                { error: "A product with this slug already exists." },
+                { error: "A category or product with this slug already exists." },
                 { status: 400 }
             );
         }
