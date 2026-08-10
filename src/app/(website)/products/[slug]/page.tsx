@@ -4,8 +4,6 @@ import { prisma } from "@/lib/prisma";
 import ProductDetailClient, { ClientProductProps } from "./ProductDetailClient";
 import { ShieldCheck } from "lucide-react";
 
-export const dynamic = "force-dynamic";
-
 interface PageProps {
     params: Promise<{ slug: string }>;
 }
@@ -25,18 +23,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     const product = await prisma.product.findUnique({
         where: { slug },
-        include: {
-            brand: true,
-            category: true,
-            thumbnailImage: true,
-            images: true,
+        select: {
+            name: true,
+            shortDescription: true,
+            fullDescription: true,
+            category: { select: { name: true } },
+            thumbnailImage: { select: { secureUrl: true } },
+            images: { take: 1, select: { secureUrl: true } },
         },
     });
 
     if (!product) {
-        return {
-            title: "Product Not Found",
-        };
+        return { title: "Product Not Found" };
     }
 
     const primaryImage =
@@ -54,12 +52,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         openGraph: {
             title: `${product.name} | SN Trading`,
             description: descriptionText,
-            images: [
-                {
-                    url: primaryImage,
-                    alt: product.name,
-                },
-            ],
+            images: [{ url: primaryImage, alt: product.name }],
         },
     };
 }
@@ -73,18 +66,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
             brand: true,
             category: true,
             thumbnailImage: true,
-            images: true,
-            variants: {
-                orderBy: {
-                    displayOrder: "asc",
-                },
-            },
-            specifications: true,
-            badges: {
-                include: {
-                    badge: true,
-                },
-            },
+            images: { orderBy: { displayOrder: "asc" } },
+            variants: { orderBy: { displayOrder: "asc" } },
+            specifications: { orderBy: { displayOrder: "asc" } },
+            badges: { include: { badge: true } },
         },
     });
 
