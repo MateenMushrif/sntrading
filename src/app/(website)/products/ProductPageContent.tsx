@@ -4,7 +4,6 @@ import { useSearchParams } from "next/navigation";
 import ProductGrid from "@/components/product/ProductGrid";
 import { useProducts } from "@/hooks/useProducts";
 import EmptyState from "@/components/shared/EmptyState";
-import Loading from "@/components/shared/Loading";
 
 export default function ProductPageContent() {
     const searchParams = useSearchParams();
@@ -25,8 +24,6 @@ export default function ProductPageContent() {
         if (brand) return `${brand.replace(/-/g, " ")} Range`;
         return "All Products";
     };
-
-    if (loading) return <Loading />;
 
     if (error) {
         return (
@@ -49,20 +46,22 @@ export default function ProductPageContent() {
                     {getPageTitle()}
                 </h1>
                 <p className="mt-1 text-xs text-slate-500">
-                    {productCount > 0
-                        ? `Showing ${productCount} commercial bakery raw material${productCount === 1 ? "" : "s"
-                        }.`
-                        : "Browse our complete commercial bakery raw materials catalogue."}
+                    {loading
+                        ? "Fetching wholesale bakery raw materials..."
+                        : productCount > 0
+                            ? `Showing ${productCount} commercial bakery raw material${productCount === 1 ? "" : "s"
+                            }.`
+                            : "Browse our complete commercial bakery raw materials catalogue."}
                 </p>
             </div>
 
-            {productCount === 0 ? (
+            {!loading && productCount === 0 ? (
                 <EmptyState
                     title="No products found"
                     message="Try adjusting your search query or active category filters."
                 />
             ) : (
-                <ProductGrid products={products} />
+                <ProductGrid products={products} loading={loading} />
             )}
         </section>
     );
