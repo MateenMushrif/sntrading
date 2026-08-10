@@ -30,18 +30,17 @@ export default function ProductPageContent() {
             <EmptyState
                 title="Error loading products"
                 message={error || "Failed to fetch products. Please try again."}
+                actionLabel="Try Again"
+                actionHref="/products"
             />
         );
-    }
-
-    if (loading) {
-        return <ProductGridSkeleton />;
     }
 
     const productCount = products.length;
 
     return (
         <section aria-labelledby="products-heading">
+            {/* Header rendered synchronously from URL params (Zero title flicker) */}
             <div className="mb-6">
                 <h1
                     id="products-heading"
@@ -50,17 +49,23 @@ export default function ProductPageContent() {
                     {getPageTitle()}
                 </h1>
                 <p className="mt-1 text-xs text-slate-500">
-                    {productCount > 0
-                        ? `Showing ${productCount} commercial bakery raw material${productCount === 1 ? "" : "s"
-                        }.`
-                        : "Browse our complete commercial bakery raw materials catalogue."}
+                    {loading
+                        ? "Fetching commercial bakery raw materials..."
+                        : productCount > 0
+                            ? `Showing ${productCount} commercial bakery raw material${productCount === 1 ? "" : "s"
+                            }.`
+                            : "Browse our complete commercial bakery raw materials catalogue."}
                 </p>
             </div>
 
-            {productCount === 0 ? (
+            {loading ? (
+                <ProductGridSkeleton />
+            ) : productCount === 0 ? (
                 <EmptyState
                     title="No products found"
                     message="Try adjusting your search query or active category filters."
+                    actionLabel="View All Products"
+                    actionHref="/products"
                 />
             ) : (
                 <ProductGrid products={products} />

@@ -55,6 +55,11 @@ export async function GET(request: NextRequest) {
                     thumbnailImage: {
                         select: { id: true, secureUrl: true, altText: true },
                     },
+                    // ✅ Include specifications directly so QuickView opens instantly with NO extra network calls!
+                    specifications: {
+                        select: { id: true, label: true, value: true },
+                        orderBy: { displayOrder: "asc" },
+                    },
                 },
                 orderBy: { createdAt: "desc" },
             }),

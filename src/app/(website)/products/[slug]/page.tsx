@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
@@ -18,20 +19,25 @@ function getPriceValidUntilDate(): string {
     return nextYear.toISOString().split("T")[0];
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-    const { slug } = await params;
-
-    const product = await prisma.product.findUnique({
+// ✅ Cache query to deduplicate calls between generateMetadata and ProductDetailPage
+const getCachedProduct = cache(async (slug: string) => {
+    return prisma.product.findUnique({
         where: { slug },
-        select: {
-            name: true,
-            shortDescription: true,
-            fullDescription: true,
-            category: { select: { name: true } },
-            thumbnailImage: { select: { secureUrl: true } },
-            images: { take: 1, select: { secureUrl: true } },
+        include: {
+            brand: true,
+            category: true,
+            thumbnailImage: true,
+            images: { orderBy: { displayOrder: "asc" } },
+            variants: { orderBy: { displayOrder: "asc" } },
+            specifications: { orderBy: { displayOrder: "asc" } },
+            badges: { include: { badge: true } },
         },
     });
+});
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const { slug } = await params;
+    const product = await getCachedProduct(slug);
 
     if (!product) {
         return { title: "Product Not Found" };
@@ -59,19 +65,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProductDetailPage({ params }: PageProps) {
     const { slug } = await params;
-
-    const product = await prisma.product.findUnique({
-        where: { slug },
-        include: {
-            brand: true,
-            category: true,
-            thumbnailImage: true,
-            images: { orderBy: { displayOrder: "asc" } },
-            variants: { orderBy: { displayOrder: "asc" } },
-            specifications: { orderBy: { displayOrder: "asc" } },
-            badges: { include: { badge: true } },
-        },
-    });
+    const product = await getCachedProduct(slug);
 
     if (!product) {
         notFound();

@@ -1,9 +1,11 @@
+// D:\SN trading\sntrading\src\components\product\QuickViewModal.tsx
+
 "use client";
 
 import { useState, useEffect, TouchEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { X, ChevronLeft, ChevronRight, MessageSquarePlus, Check, ArrowRight, Loader2 } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, MessageSquarePlus, Check, ArrowRight } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Product, CloudinaryImage, CategoryRelation } from "@/types/product";
 
@@ -17,63 +19,19 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
     const { addToCart } = useCart();
     const active = isOpen ?? Boolean(product);
 
-    // Track previous product ID to reset state cleanly during render pass
     const [prevProductId, setPrevProductId] = useState<string | null>(null);
-    const [extraDetails, setExtraDetails] = useState<Product | null>(null);
-    const [loadingExtra, setLoadingExtra] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
     const [touchStartX, setTouchStartX] = useState<number | null>(null);
     const [added, setAdded] = useState(false);
 
-    // ✅ React Pattern: Reset state during render when prop ID changes
+    // Reset image slider when switching products
     const currentProductId = product?.id || null;
     if (currentProductId !== prevProductId) {
         setPrevProductId(currentProductId);
         setCurrentImageIndex(0);
-        setExtraDetails(null);
-        setLoadingExtra(false);
     }
 
-    // Merge basic product data with extra details when available
-    const displayProduct = (extraDetails && extraDetails.id === product?.id)
-        ? { ...product, ...extraDetails }
-        : product;
-
-    // On-Demand Fetch: ONLY fetch if opened and missing gallery/specs
-    useEffect(() => {
-        if (!product || !active) return;
-
-        // Skip network call if specs are already loaded
-        if (Array.isArray(product.specifications) && product.specifications.length > 0) {
-            return;
-        }
-
-        let isMounted = true;
-
-        // Defer loading state execution out of synchronous effect loop
-        queueMicrotask(() => {
-            if (isMounted) setLoadingExtra(true);
-        });
-
-        fetch(`/api/products/${product.slug || product.id}`)
-            .then((res) => res.json())
-            .then((fullData) => {
-                if (isMounted && fullData && !fullData.error) {
-                    setExtraDetails(fullData);
-                }
-            })
-            .catch((err) => console.error("Failed fetching extra details:", err))
-            .finally(() => {
-                if (isMounted) setLoadingExtra(false);
-            });
-
-        return () => {
-            isMounted = false;
-        };
-    }, [product, active]);
-
-    // Lock body scroll when modal is active
+    // Lock body scroll when active
     useEffect(() => {
         if (active) {
             document.body.style.overflow = "hidden";
@@ -85,14 +43,14 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
         };
     }, [active]);
 
-    if (!active || !displayProduct) return null;
+    if (!active || !product) return null;
 
     const categoryObj: CategoryRelation =
-        typeof displayProduct.category === "object" && displayProduct.category !== null
-            ? displayProduct.category
+        typeof product.category === "object" && product.category !== null
+            ? product.category
             : {
                 id: "gen",
-                name: typeof displayProduct.category === "string" ? displayProduct.category : "General",
+                name: typeof product.category === "string" ? product.category : "General",
                 slug: "general",
             };
 
@@ -100,18 +58,18 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
 
     // Build Image List
     const rawImages: CloudinaryImage[] = [];
-    if (displayProduct.thumbnailImage?.secureUrl) {
-        rawImages.push(displayProduct.thumbnailImage);
+    if (product.thumbnailImage?.secureUrl) {
+        rawImages.push(product.thumbnailImage);
     }
-    if (Array.isArray(displayProduct.images)) {
-        displayProduct.images.forEach((img) => {
-            if (img?.secureUrl && img.secureUrl !== displayProduct.thumbnailImage?.secureUrl) {
+    if (Array.isArray(product.images)) {
+        product.images.forEach((img) => {
+            if (img?.secureUrl && img.secureUrl !== product.thumbnailImage?.secureUrl) {
                 rawImages.push(img);
             }
         });
     }
 
-    const images = rawImages.length > 0 ? rawImages : [{ secureUrl: "/placeholder-product.png", altText: displayProduct.name }];
+    const images = rawImages.length > 0 ? rawImages : [{ secureUrl: "/placeholder-product.png", altText: product.name }];
     const safeIndex = currentImageIndex % images.length;
     const currentImg = images[safeIndex] || images[0];
 
@@ -128,8 +86,8 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
     };
 
     const normalizedSpecs: Array<{ label: string; value: string }> = [];
-    if (Array.isArray(displayProduct.specifications)) {
-        displayProduct.specifications.forEach((spec) => {
+    if (Array.isArray(product.specifications)) {
+        product.specifications.forEach((spec) => {
             if (spec && typeof spec === "object" && spec.value) {
                 normalizedSpecs.push({ label: spec.label || spec.value, value: String(spec.value) });
             }
@@ -137,7 +95,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
     }
 
     const handleAddToCart = () => {
-        addToCart(displayProduct);
+        addToCart(product);
         setAdded(true);
         setTimeout(() => setAdded(false), 2000);
     };
@@ -171,7 +129,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                     <div className="relative w-full h-full">
                         <Image
                             src={currentImg.secureUrl}
-                            alt={currentImg.altText || displayProduct.name}
+                            alt={currentImg.altText || product.name}
                             fill
                             sizes="(max-width: 768px) 100vw, 50vw"
                             className="object-cover transition-all duration-300"
@@ -201,30 +159,22 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                 {/* Right Column Details */}
                 <div className="w-full md:w-1/2 p-5 md:p-6 flex flex-col justify-between bg-white">
                     <div>
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-bold uppercase tracking-widest text-amber-600">
-                                {categoryName}
-                            </span>
-                            {loadingExtra && (
-                                <span className="inline-flex items-center gap-1 text-2xs text-slate-400">
-                                    <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
-                                    <span>Syncing...</span>
-                                </span>
-                            )}
-                        </div>
+                        <span className="text-xs font-bold uppercase tracking-widest text-amber-600 block mb-1">
+                            {categoryName}
+                        </span>
 
                         <h2 className="text-lg md:text-xl font-bold text-slate-900 mb-1.5 leading-snug">
-                            {displayProduct.name}
+                            {product.name}
                         </h2>
 
-                        {displayProduct.shortDescription && (
+                        {product.shortDescription && (
                             <p className="text-gray-600 text-xs leading-relaxed mb-4 line-clamp-3">
-                                {displayProduct.shortDescription}
+                                {product.shortDescription}
                             </p>
                         )}
 
                         {/* Specs Section */}
-                        {normalizedSpecs.length > 0 ? (
+                        {normalizedSpecs.length > 0 && (
                             <div className="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-2">
                                     Specifications
@@ -238,15 +188,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                                     ))}
                                 </dl>
                             </div>
-                        ) : loadingExtra ? (
-                            <div className="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-200 animate-pulse space-y-2">
-                                <div className="h-3 w-20 bg-slate-200 rounded" />
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div className="h-5 bg-slate-200 rounded" />
-                                    <div className="h-5 bg-slate-200 rounded" />
-                                </div>
-                            </div>
-                        ) : null}
+                        )}
                     </div>
 
                     <div className="pt-3 border-t border-gray-100 flex items-center gap-2.5 mt-auto">
@@ -261,7 +203,7 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
                         </button>
 
                         <Link
-                            href={`/products/${displayProduct.slug}`}
+                            href={`/products/${product.slug}`}
                             onClick={onClose}
                             className="text-xs font-bold text-slate-900 hover:text-amber-600 border border-gray-300 hover:border-amber-400 py-2.5 px-4 rounded-xl flex items-center gap-1 transition-colors"
                         >

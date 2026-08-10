@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import ProductCard from "./ProductCard";
 import QuickViewModal from "./QuickViewModal";
 import { Product } from "@/types/product";
@@ -11,17 +11,15 @@ interface ProductGridProps {
 
 export default function ProductGrid({ products }: ProductGridProps) {
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const handleOpenQuickView = (product: Product) => {
+    // ✅ Memoize callbacks so React.memo(ProductCard) actually prevents re-renders
+    const handleOpenQuickView = useCallback((product: Product) => {
         setSelectedProduct(product);
-        setIsModalOpen(true);
-    };
+    }, []);
 
-    const handleCloseQuickView = () => {
-        setIsModalOpen(false);
+    const handleCloseQuickView = useCallback(() => {
         setSelectedProduct(null);
-    };
+    }, []);
 
     return (
         <div className="w-full relative">
@@ -42,9 +40,10 @@ export default function ProductGrid({ products }: ProductGridProps) {
                 )}
             </div>
 
+            {/* ✅ Derived isOpen state from selectedProduct */}
             <QuickViewModal
                 product={selectedProduct}
-                isOpen={isModalOpen}
+                isOpen={Boolean(selectedProduct)}
                 onClose={handleCloseQuickView}
             />
         </div>

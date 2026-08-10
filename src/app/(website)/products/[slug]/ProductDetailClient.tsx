@@ -139,7 +139,6 @@ export default function ProductDetailClient({ product }: ProductDetailClientProp
                         className="object-cover transition-all duration-300"
                     />
 
-                    {/* Navigation Arrows */}
                     {images.length > 1 && (
                         <>
                             <button
