@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -5,6 +6,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import ProductGrid from "@/components/product/ProductGrid";
 import { ArrowLeft, Layers, Package } from "lucide-react";
+import { Product } from "@/types/product";
 
 export const dynamic = "force-dynamic";
 
@@ -12,25 +14,82 @@ interface PageProps {
     params: Promise<{ slug: string }>;
 }
 
-// 1. Dynamic Metadata Generator for Category SEO
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-    const { slug } = await params;
-
-    // Try finding by slug, fallback to ID lookup
+// ✅ Cache category lookup to prevent duplicate DB calls between generateMetadata & CategoryDetailPage
+const getCachedCategory = cache(async (slug: string) => {
+    // Primary lookup by slug
     let category = await prisma.category.findUnique({
         where: { slug },
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            image: true,
+            products: {
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    shortDescription: true,
+                    category: {
+                        select: { id: true, name: true, slug: true },
+                    },
+                    thumbnailImage: {
+                        select: { id: true, secureUrl: true, altText: true },
+                    },
+                    specifications: {
+                        select: { id: true, label: true, value: true },
+                        orderBy: { displayOrder: "asc" },
+                    },
+                },
+                orderBy: { createdAt: "desc" },
+            },
+        },
     });
 
+    // Fallback lookup by CUID/ID
     if (!category) {
         category = await prisma.category.findUnique({
             where: { id: slug },
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                description: true,
+                image: true,
+                products: {
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true,
+                        shortDescription: true,
+                        category: {
+                            select: { id: true, name: true, slug: true },
+                        },
+                        thumbnailImage: {
+                            select: { id: true, secureUrl: true, altText: true },
+                        },
+                        specifications: {
+                            select: { id: true, label: true, value: true },
+                            orderBy: { displayOrder: "asc" },
+                        },
+                    },
+                    orderBy: { createdAt: "desc" },
+                },
+            },
         });
     }
 
+    return category;
+});
+
+// Dynamic Metadata Generator
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const { slug } = await params;
+    const category = await getCachedCategory(slug);
+
     if (!category) {
-        return {
-            title: "Category Not Found",
-        };
+        return { title: "Category Not Found" };
     }
 
     const title = `${category.name} | Wholesale Bakery Ingredients`;
@@ -55,53 +114,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CategoryDetailPage({ params }: PageProps) {
     const { slug } = await params;
-
-    // Query 1: Primary lookup by slug
-    let category = await prisma.category.findUnique({
-        where: { slug },
-        include: {
-            products: {
-                include: {
-                    brand: true,
-                    category: true,
-                    thumbnailImage: true,
-                    images: true,
-                    variants: true,
-                },
-                orderBy: { createdAt: "desc" },
-            },
-        },
-    });
-
-    // Query 2: Fallback lookup by CUID/ID for backward compatibility
-    if (!category) {
-        category = await prisma.category.findUnique({
-            where: { id: slug },
-            include: {
-                products: {
-                    include: {
-                        brand: true,
-                        category: true,
-                        thumbnailImage: true,
-                        images: true,
-                        variants: true,
-                    },
-                    orderBy: { createdAt: "desc" },
-                },
-            },
-        });
-
-        // If found via ID, perform a permanent 308 redirect to the canonical slug URL
-        if (category?.slug) {
-            redirect(`/categories/${category.slug}`);
-        }
-    }
+    const category = await getCachedCategory(slug);
 
     if (!category) {
         notFound();
     }
 
-    type CategoryProduct = (typeof category.products)[number];
+    // Redirect to canonical slug URL if accessed via raw ID
+    if (slug !== category.slug) {
+        redirect(`/categories/${category.slug}`);
+    }
 
     const imageUrl = typeof category.image === "string" ? category.image : null;
 
@@ -115,7 +137,7 @@ export default async function CategoryDetailPage({ params }: PageProps) {
         mainEntity: {
             "@type": "ItemList",
             numberOfItems: category.products.length,
-            itemListElement: category.products.map((prod: CategoryProduct, index: number) => ({
+            itemListElement: category.products.map((prod, index: number) => ({
                 "@type": "ListItem",
                 position: index + 1,
                 name: prod.name,
@@ -196,7 +218,8 @@ export default async function CategoryDetailPage({ params }: PageProps) {
                     </p>
                 </div>
             ) : (
-                <ProductGrid products={category.products as unknown as React.ComponentProps<typeof ProductGrid>['products']} />
+                // ✅ Clean typed ProductGrid passing optimized products
+                <ProductGrid products={category.products as Product[]} />
             )}
         </main>
     );

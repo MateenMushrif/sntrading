@@ -1,9 +1,10 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import ProductGrid from "@/components/product/ProductGrid";
-import Link from "next/link";
 import { ArrowLeft, ExternalLink, Building2, Package, Award, Sparkles } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -12,12 +13,48 @@ interface PageProps {
     params: Promise<{ slug: string }>;
 }
 
+// ✅ Cache brand lookup to eliminate duplicate DB calls between generateMetadata and BrandDetailPage
+const getCachedBrand = cache(async (slug: string) => {
+    return prisma.brand.findUnique({
+        where: { slug },
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            logo: true,
+            websiteUrl: true,
+            isFeatured: true,
+            products: {
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    status: true, // ✅ Include status
+                    shortDescription: true,
+                    category: {
+                        select: { id: true, name: true, slug: true },
+                    },
+                    brand: {
+                        select: { id: true, name: true, slug: true },
+                    },
+                    thumbnailImage: {
+                        select: { id: true, secureUrl: true, altText: true },
+                    },
+                    specifications: {
+                        select: { id: true, label: true, value: true },
+                        orderBy: { displayOrder: "asc" },
+                    },
+                },
+                orderBy: { createdAt: "desc" },
+            },
+        },
+    });
+});
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { slug } = await params;
-
-    const brand = await prisma.brand.findUnique({
-        where: { slug },
-    });
+    const brand = await getCachedBrand(slug);
 
     if (!brand) {
         return {
@@ -42,32 +79,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BrandDetailPage({ params }: PageProps) {
     const { slug } = await params;
-
-    const brand = await prisma.brand.findUnique({
-        where: { slug },
-        include: {
-            products: {
-                include: {
-                    category: true,
-                    thumbnailImage: true,
-                    images: true,
-                    variants: true,
-                    specifications: true,
-                },
-                orderBy: { createdAt: "desc" },
-            },
-        },
-    });
+    const brand = await getCachedBrand(slug);
 
     if (!brand) {
         notFound();
     }
-
-    // Map Prisma products to flatten the brand field with explicit element typing
-    const formattedProducts = brand.products.map((product: (typeof brand.products)[number]) => ({
-        ...product,
-        brand: brand.name, // Supplies the brand string expected by ProductGrid
-    }));
 
     const jsonLd = {
         "@context": "https://schema.org",
@@ -78,7 +94,7 @@ export default async function BrandDetailPage({ params }: PageProps) {
         mainEntity: {
             "@type": "ItemList",
             numberOfItems: brand.products.length,
-            itemListElement: brand.products.map((prod: (typeof brand.products)[number], index: number) => ({
+            itemListElement: brand.products.map((prod, index: number) => ({
                 "@type": "ListItem",
                 position: index + 1,
                 name: prod.name,
@@ -103,7 +119,7 @@ export default async function BrandDetailPage({ params }: PageProps) {
                     <span>Back to Brand Partners</span>
                 </Link>
 
-                <span className="text-2xs font-extrabold text-text-muted uppercase tracking-wider font-mono">
+                <span className="text-xs font-extrabold text-text-muted uppercase tracking-wider font-mono">
                     Direct Distribution
                 </span>
             </div>
@@ -113,7 +129,7 @@ export default async function BrandDetailPage({ params }: PageProps) {
 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-start sm:items-center gap-5">
-                        <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-bg-main border border-border-subtle p-3 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
+                        <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-bg-main border border-border-subtle p-3 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
                             {brand.logo ? (
                                 <Image
                                     src={brand.logo}
@@ -134,7 +150,7 @@ export default async function BrandDetailPage({ params }: PageProps) {
                                 </h1>
 
                                 {brand.isFeatured && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-extrabold bg-accent/10 text-accent border border-accent/20">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-extrabold bg-accent/10 text-accent border border-accent/20">
                                         <Sparkles className="w-3 h-3" />
                                         <span>FEATURED PARTNER</span>
                                     </span>
@@ -146,7 +162,7 @@ export default async function BrandDetailPage({ params }: PageProps) {
                                     `Authorized commercial wholesale catalog for ${brand.name} bakery raw materials and professional ingredients.`}
                             </p>
 
-                            <div className="flex items-center gap-4 pt-1 text-2xs font-extrabold text-primary">
+                            <div className="flex items-center gap-4 pt-1 text-xs font-extrabold text-primary">
                                 <span className="flex items-center gap-1">
                                     <Package className="w-3.5 h-3.5 text-accent" />
                                     {brand.products.length} Products Listed
@@ -165,7 +181,7 @@ export default async function BrandDetailPage({ params }: PageProps) {
                             href={brand.websiteUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-extrabold text-accent bg-accent/10 border border-accent/20 hover:bg-accent/20 transition-all shrink-0 self-start md:self-center shadow-2xs"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-extrabold text-accent bg-accent/10 border border-accent/20 hover:bg-accent/20 transition-all shrink-0 self-start md:self-center shadow-xs"
                         >
                             <span>Official Website</span>
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -178,12 +194,12 @@ export default async function BrandDetailPage({ params }: PageProps) {
                 <h2 className="text-sm font-extrabold text-primary uppercase tracking-wider">
                     Product Catalog
                 </h2>
-                <span className="text-2xs font-bold text-text-muted">
+                <span className="text-xs font-bold text-text-muted">
                     Showing {brand.products.length} SKUs
                 </span>
             </div>
 
-            {formattedProducts.length === 0 ? (
+            {brand.products.length === 0 ? (
                 <div className="bg-bg-off border border-border-subtle rounded-2xl p-12 text-center space-y-2">
                     <div className="w-12 h-12 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center mx-auto text-accent mb-2">
                         <Package className="w-6 h-6" />
@@ -196,7 +212,7 @@ export default async function BrandDetailPage({ params }: PageProps) {
                     </p>
                 </div>
             ) : (
-                <ProductGrid products={formattedProducts as unknown as React.ComponentProps<typeof ProductGrid>['products']} />
+                <ProductGrid products={brand.products} />
             )}
         </main>
     );

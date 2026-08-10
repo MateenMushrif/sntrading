@@ -19,7 +19,14 @@ export const metadata: Metadata = {
 
 export default async function BrandsPage() {
     const brands = await prisma.brand.findMany({
-        include: {
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            logo: true,
+            websiteUrl: true,
+            isFeatured: true,
             _count: {
                 select: { products: true },
             },
@@ -27,10 +34,8 @@ export default async function BrandsPage() {
         orderBy: [{ isFeatured: "desc" }, { name: "asc" }],
     });
 
-    type BrandItem = (typeof brands)[number];
-
-    const featuredBrands = brands.filter((b: BrandItem) => b.isFeatured);
-    const regularBrands = brands.filter((b: BrandItem) => !b.isFeatured);
+    const featuredBrands = brands.filter((b) => b.isFeatured);
+    const regularBrands = brands.filter((b) => !b.isFeatured);
 
     return (
         <main className="max-w-7xl mx-auto px-3 sm:px-6 py-8 space-y-10">
@@ -39,7 +44,7 @@ export default async function BrandsPage() {
                 <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
 
                 <div className="relative z-10 max-w-2xl space-y-2">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-2xs font-extrabold bg-accent/10 text-accent border border-accent/20">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-extrabold bg-accent/10 text-accent border border-accent/20">
                         <Award className="w-3.5 h-3.5" />
                         <span>Direct Factory Distribution</span>
                     </div>
@@ -65,10 +70,10 @@ export default async function BrandsPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {featuredBrands.map((brand: BrandItem) => (
+                        {featuredBrands.map((brand) => (
                             <div
                                 key={brand.id}
-                                className="group relative rounded-xl bg-bg-main border border-accent/40 hover:border-accent p-5 transition-all shadow-2xs hover:shadow-md flex flex-col justify-between space-y-4"
+                                className="group relative rounded-xl bg-bg-main border border-accent/40 hover:border-accent p-5 transition-all shadow-xs hover:shadow-md flex flex-col justify-between space-y-4"
                             >
                                 <div className="flex items-start gap-4">
                                     <div className="relative w-16 h-16 rounded-lg bg-bg-off border border-border-subtle p-2 flex items-center justify-center shrink-0 group-hover:bg-accent/5 transition-colors overflow-hidden">
@@ -90,18 +95,18 @@ export default async function BrandsPage() {
                                             <h3 className="text-base font-bold text-primary truncate group-hover:text-accent transition-colors">
                                                 {brand.name}
                                             </h3>
-                                            <span className="shrink-0 px-2 py-0.5 rounded text-2xs font-extrabold bg-accent/10 text-accent border border-accent/20">
+                                            <span className="shrink-0 px-2 py-0.5 rounded text-xs font-extrabold bg-accent/10 text-accent border border-accent/20">
                                                 FEATURED
                                             </span>
                                         </div>
 
-                                        <p className="text-2xs text-text-muted line-clamp-2">
+                                        <p className="text-xs text-text-muted line-clamp-2">
                                             {brand.description || "Official manufacturing partner supplying commercial bakery raw materials."}
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="pt-3 border-t border-border-subtle flex items-center justify-between text-2xs font-extrabold">
+                                <div className="pt-3 border-t border-border-subtle flex items-center justify-between text-xs font-extrabold">
                                     <div className="flex items-center gap-3">
                                         <span className="flex items-center gap-1 text-primary">
                                             <Package className="w-3.5 h-3.5 text-accent" />
@@ -141,16 +146,16 @@ export default async function BrandsPage() {
                     <h2 className="text-sm font-extrabold text-primary uppercase tracking-wider">
                         All Brand Partners
                     </h2>
-                    <span className="text-2xs font-bold text-text-muted">
+                    <span className="text-xs font-bold text-text-muted">
                         {brands.length} Direct Vendors
                     </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {(featuredBrands.length > 0 ? regularBrands : brands).map((brand: BrandItem) => (
+                    {(featuredBrands.length > 0 ? regularBrands : brands).map((brand) => (
                         <div
                             key={brand.id}
-                            className="group rounded-xl bg-bg-main border border-border-subtle hover:border-accent p-4 transition-all shadow-2xs hover:shadow-md flex flex-col justify-between"
+                            className="group rounded-xl bg-bg-main border border-border-subtle hover:border-accent p-4 transition-all shadow-xs hover:shadow-md flex flex-col justify-between"
                         >
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3">
@@ -172,18 +177,18 @@ export default async function BrandsPage() {
                                         <h3 className="text-sm font-bold text-primary truncate group-hover:text-accent transition-colors">
                                             {brand.name}
                                         </h3>
-                                        <span className="text-2xs font-extrabold text-text-muted">
+                                        <span className="text-xs font-extrabold text-text-muted">
                                             {brand._count.products} SKUs Available
                                         </span>
                                     </div>
                                 </div>
 
-                                <p className="text-2xs text-text-muted line-clamp-2">
+                                <p className="text-xs text-text-muted line-clamp-2">
                                     {brand.description || "Official manufacturer and supplier partner."}
                                 </p>
                             </div>
 
-                            <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between text-2xs font-extrabold">
+                            <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between text-xs font-extrabold">
                                 {brand.websiteUrl ? (
                                     <a
                                         href={brand.websiteUrl}

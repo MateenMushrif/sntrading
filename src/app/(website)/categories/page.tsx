@@ -19,15 +19,18 @@ export const metadata: Metadata = {
 
 export default async function CategoriesPage() {
     const categories = await prisma.category.findMany({
-        include: {
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            image: true,
             _count: {
                 select: { products: true },
             },
         },
         orderBy: { name: "asc" },
     });
-
-    type CategoryItem = (typeof categories)[number];
 
     return (
         <main className="mx-auto max-w-7xl px-4 py-8">
@@ -41,15 +44,15 @@ export default async function CategoriesPage() {
                 </p>
             </div>
 
-            {/* Light Theme Category Grid */}
+            {/* Category Grid */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {categories.map((cat: CategoryItem, index: number) => {
+                {categories.map((cat, index: number) => {
                     const imageUrl = typeof cat.image === "string" ? cat.image : null;
 
                     return (
                         <Link
                             key={cat.id}
-                            href={`/categories/${cat.id}`}
+                            href={`/categories/${cat.slug}`} // ✅ Direct canonical slug URL (No 308 redirect)
                             className="group flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition-all hover:border-amber-500 hover:shadow-md"
                         >
                             <div>
