@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import ProductGrid from "@/components/product/ProductGrid";
 import { useProducts } from "@/hooks/useProducts";
 import EmptyState from "@/components/shared/EmptyState";
+import ProductGridSkeleton from "@/components/product/ProductGridSkeleton";
 
 export default function ProductPageContent() {
     const searchParams = useSearchParams();
@@ -17,7 +18,6 @@ export default function ProductPageContent() {
         brand,
     });
 
-    // Dynamic heading generator based on URL query state
     const getPageTitle = (): string => {
         if (search) return `Search Results for "${search}"`;
         if (category) return `${category.replace(/-/g, " ")} Products`;
@@ -34,6 +34,10 @@ export default function ProductPageContent() {
         );
     }
 
+    if (loading) {
+        return <ProductGridSkeleton />;
+    }
+
     const productCount = products.length;
 
     return (
@@ -46,22 +50,20 @@ export default function ProductPageContent() {
                     {getPageTitle()}
                 </h1>
                 <p className="mt-1 text-xs text-slate-500">
-                    {loading
-                        ? "Fetching wholesale bakery raw materials..."
-                        : productCount > 0
-                            ? `Showing ${productCount} commercial bakery raw material${productCount === 1 ? "" : "s"
-                            }.`
-                            : "Browse our complete commercial bakery raw materials catalogue."}
+                    {productCount > 0
+                        ? `Showing ${productCount} commercial bakery raw material${productCount === 1 ? "" : "s"
+                        }.`
+                        : "Browse our complete commercial bakery raw materials catalogue."}
                 </p>
             </div>
 
-            {!loading && productCount === 0 ? (
+            {productCount === 0 ? (
                 <EmptyState
                     title="No products found"
                     message="Try adjusting your search query or active category filters."
                 />
             ) : (
-                <ProductGrid products={products} loading={loading} />
+                <ProductGrid products={products} />
             )}
         </section>
     );
