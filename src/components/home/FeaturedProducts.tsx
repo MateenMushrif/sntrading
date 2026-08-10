@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import ProductCard from "@/components/product/ProductCard";
 import QuickViewModal from "@/components/product/QuickViewModal";
 import { Product } from "@/types/product";
@@ -11,6 +11,15 @@ interface FeaturedProductsProps {
 
 export default function FeaturedProducts({ products = [] }: FeaturedProductsProps) {
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+    // ✅ Memoize QuickView handler to preserve ProductCard React.memo optimization
+    const handleOpenQuickView = useCallback((p: Product) => {
+        setSelectedProduct(p);
+    }, []);
+
+    const handleCloseQuickView = useCallback(() => {
+        setSelectedProduct(null);
+    }, []);
 
     if (!products.length) return null;
 
@@ -33,18 +42,17 @@ export default function FeaturedProducts({ products = [] }: FeaturedProductsProp
                         <ProductCard
                             key={product.id}
                             product={product}
-                            onQuickView={(p) => setSelectedProduct(p)}
+                            onQuickView={handleOpenQuickView}
                         />
                     ))}
                 </div>
             </div>
 
-            {selectedProduct && (
-                <QuickViewModal
-                    product={selectedProduct}
-                    onClose={() => setSelectedProduct(null)}
-                />
-            )}
+            <QuickViewModal
+                product={selectedProduct}
+                isOpen={Boolean(selectedProduct)}
+                onClose={handleCloseQuickView}
+            />
         </section>
     );
 }
