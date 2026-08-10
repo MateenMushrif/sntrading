@@ -47,7 +47,7 @@ export default function Header() {
                 const res = await fetch("/api/categories");
                 if (res.ok && isMounted) {
                     const data = await res.json();
-                    setCategories(data);
+                    setCategories(Array.isArray(data) ? data : []);
                 }
             } catch (err) {
                 console.error("Failed to load header categories:", err);
@@ -79,7 +79,6 @@ export default function Header() {
         <header className="bg-primary text-bg-main sticky top-0 z-50 shadow-md">
             <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6">
                 <div className="flex items-center justify-between h-16 gap-3 md:gap-4">
-
                     {/* Mobile Hamburger Button */}
                     <button
                         type="button"
@@ -183,21 +182,20 @@ export default function Header() {
 
             <div className="w-full h-px bg-accent" />
 
-            {/* LEFT-SIDE DRAWER WITH 40% FOOTER SECTION */}
+            {/* Mobile Drawer */}
             <div
                 className={`lg:hidden fixed inset-0 z-50 transition-all duration-300 ${isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
                     }`}
             >
                 <div
                     onClick={closeMobileMenu}
-                    className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity duration-300"
+                    className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity duration-300"
                 />
 
                 <aside
                     className={`absolute top-0 left-0 h-full w-72 sm:w-80 bg-primary border-r border-accent/30 shadow-2xl flex flex-col transition-transform duration-300 ease-out z-10 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
                         }`}
                 >
-                    {/* Drawer Header */}
                     <div className="flex items-center justify-between px-4 h-16 border-b border-border-subtle/20 shrink-0">
                         <Link
                             href="/"
@@ -216,7 +214,6 @@ export default function Header() {
                         </button>
                     </div>
 
-                    {/* Top Section: Navigation Links */}
                     <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
                         <div className="text-xs font-bold uppercase tracking-wider text-accent px-1">
                             Main Menu
@@ -269,7 +266,6 @@ export default function Header() {
                         </nav>
                     </div>
 
-                    {/* Bottom 40% Section: Footer Details */}
                     <div className="border-t border-accent/30 bg-primary-hover/60 p-4 space-y-3 shrink-0">
                         <div className="text-xs font-bold uppercase tracking-wider text-accent">
                             Quick Contact & Info
@@ -297,7 +293,7 @@ export default function Header() {
                         <a
                             href="/sn-trading-catalogue.pdf"
                             download
-                            className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg bg-accent/10 border border-accent/40 text-accent hover:bg-accent hover:text-primary text-xs font-bold transition-all shadow-xs mt-2"
+                            className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg bg-accent/10 border border-accent/40 text-accent hover:bg-accent hover:text-primary text-xs font-bold transition-all shadow-2xs mt-2"
                         >
                             <Download className="w-3.5 h-3.5 shrink-0" />
                             <span>Download Catalogue (PDF)</span>

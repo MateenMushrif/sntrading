@@ -10,8 +10,8 @@ interface SearchResultProduct {
     id: string;
     name: string;
     slug: string;
-    category: { name: string; slug: string };
-    brand: { name: string };
+    category?: { name?: string; slug?: string } | null;
+    brand?: { name?: string } | null;
     thumbnailImage?: { secureUrl: string } | null;
     images?: { secureUrl: string }[];
     variants?: { weightOrSize: string }[];
@@ -36,36 +36,41 @@ export default function HeaderSearch() {
     const router = useRouter();
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Debounced search query
+    // Derived state check: reset dropdown when query is short
+    const isQueryValid = query.trim().length >= 2;
+    if (!isQueryValid && (results.products.length > 0 || results.categories.length > 0 || isOpen)) {
+        setResults({ products: [], categories: [] });
+        setIsOpen(false);
+    }
+
+    // Debounced search fetcher
     useEffect(() => {
-        if (!query.trim() || query.length < 2) {
-            setResults({ products: [], categories: [] });
-            setIsOpen(false);
-            return;
-        }
+        if (!isQueryValid) return;
 
         const timer = setTimeout(async () => {
             setLoading(true);
             try {
-                const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-                const data = await res.json();
-                setResults({
-                    products: data.products || [],
-                    categories: data.categories || [],
-                });
-                setIsOpen(true);
-                setSelectedIndex(-1);
+                const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setResults({
+                        products: Array.isArray(data.products) ? data.products : [],
+                        categories: Array.isArray(data.categories) ? data.categories : [],
+                    });
+                    setIsOpen(true);
+                    setSelectedIndex(-1);
+                }
             } catch (err) {
-                console.error("Failed to fetch search suggestions", err);
+                console.error("Failed to fetch search suggestions:", err);
             } finally {
                 setLoading(false);
             }
-        }, 250);
+        }, 200);
 
         return () => clearTimeout(timer);
-    }, [query]);
+    }, [query, isQueryValid]);
 
-    // Handle Outside Click to Close Dropdown
+    // Close dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -89,10 +94,11 @@ export default function HeaderSearch() {
             if (selectedIndex >= 0 && selectedIndex < results.products.length) {
                 e.preventDefault();
                 const p = results.products[selectedIndex];
-                router.push(`/products/${p.slug}`);
-                setIsOpen(false);
+                if (p?.slug) {
+                    router.push(`/products/${p.slug}`);
+                    setIsOpen(false);
+                }
             } else if (query.trim()) {
-                // Full catalog search submit
                 e.preventDefault();
                 router.push(`/products?search=${encodeURIComponent(query.trim())}`);
                 setIsOpen(false);
@@ -116,29 +122,31 @@ export default function HeaderSearch() {
         }
     };
 
+    const hasResults = results.products.length > 0 || results.categories.length > 0;
+
     return (
         <div ref={dropdownRef} className="relative w-full z-50">
-            {/* Search Input Box - Matching your requested styling */}
+            {/* Search Input Box */}
             <form onSubmit={handleSearchSubmit} className="relative w-full">
                 <input
                     type="text"
-                    placeholder="Search ingredients..."
+                    placeholder="Search ingredients, brands..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    onFocus={() => query.length >= 2 && setIsOpen(true)}
+                    onFocus={() => isQueryValid && setIsOpen(true)}
                     onKeyDown={handleKeyDown}
-                    className="w-full bg-gray-900 border border-gray-700 focus:border-accent text-bg-main text-xs rounded-full pl-4 pr-9 py-1.5 focus:outline-none transition-all placeholder:text-gray-400 shadow-inner"
+                    className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs rounded-full pl-4 pr-9 py-1.5 focus:outline-none transition-all placeholder:text-slate-400 shadow-inner"
                 />
 
                 {loading ? (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-accent">
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-400">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     </div>
                 ) : query ? (
                     <button
                         type="button"
                         onClick={handleClear}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-800 text-gray-400 hover:text-accent transition-colors"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-amber-400 transition-colors"
                     >
                         <X className="w-3 h-3" />
                     </button>
@@ -146,23 +154,22 @@ export default function HeaderSearch() {
                     <button
                         type="submit"
                         aria-label="Submit search"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-400 transition-colors"
                     >
                         <Search className="w-3.5 h-3.5" />
                     </button>
                 )}
             </form>
 
-            {/* Premium Live Suggestion Dropdown */}
-            {isOpen && (results.products.length > 0 || results.categories.length > 0) && (
-                <div className="absolute top-full mt-2 left-0 w-full md:w-[125%] md:-left-[12.5%] bg-bg-main border border-border-subtle rounded-xl shadow-2xl overflow-hidden flex flex-col ring-1 ring-black/5">
-                    {/* Gold Accent Top Line */}
-                    <div className="h-1 w-full bg-accent" />
+            {/* Live Suggestion Dropdown */}
+            {isOpen && hasResults && (
+                <div className="absolute top-full mt-2 left-0 w-full sm:w-80 sm:-left-8 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col ring-1 ring-black/5 z-50">
+                    <div className="h-1 w-full bg-amber-400" />
 
                     {/* Categories Section */}
                     {results.categories.length > 0 && (
-                        <div className="p-3 bg-bg-off border-b border-border-subtle/60">
-                            <span className="text-[10px] font-extrabold uppercase tracking-widest text-text-muted mb-2 block">
+                        <div className="p-2.5 bg-slate-50 border-b border-slate-200">
+                            <span className="text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
                                 Categories
                             </span>
                             <div className="flex flex-wrap gap-1.5">
@@ -171,9 +178,9 @@ export default function HeaderSearch() {
                                         key={cat.id}
                                         href={`/products?category=${cat.slug}`}
                                         onClick={() => setIsOpen(false)}
-                                        className="inline-flex items-center gap-1 text-2xs font-bold px-2.5 py-1 rounded-full bg-bg-main border border-border-subtle text-text-main hover:border-accent hover:text-primary shadow-sm transition-all"
+                                        className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-800 hover:border-amber-400 hover:text-amber-600 shadow-sm transition-all"
                                     >
-                                        <Tag className="w-2.5 h-2.5 text-accent" />
+                                        <Tag className="w-2.5 h-2.5 text-amber-500" />
                                         <span>{cat.name}</span>
                                     </Link>
                                 ))}
@@ -183,8 +190,8 @@ export default function HeaderSearch() {
 
                     {/* Products List */}
                     {results.products.length > 0 && (
-                        <div className="p-2 max-h-[50vh] overflow-y-auto space-y-0.5">
-                            <span className="text-[10px] font-extrabold uppercase tracking-widest text-text-muted px-2 py-1.5 block">
+                        <div className="p-2 max-h-80 overflow-y-auto space-y-1">
+                            <span className="text-xs font-extrabold uppercase tracking-widest text-slate-400 px-2 py-1 block">
                                 Products
                             </span>
                             {results.products.map((p, idx) => {
@@ -192,7 +199,7 @@ export default function HeaderSearch() {
                                 const imgSrc =
                                     p.thumbnailImage?.secureUrl ||
                                     p.images?.[0]?.secureUrl ||
-                                    "/placeholder-ingredient.png";
+                                    "/placeholder-product.png";
 
                                 return (
                                     <Link
@@ -200,12 +207,12 @@ export default function HeaderSearch() {
                                         href={`/products/${p.slug}`}
                                         onClick={() => setIsOpen(false)}
                                         className={`flex items-start gap-3 p-2 rounded-lg transition-all ${isSelected
-                                                ? "bg-primary/5 border-l-2 border-accent text-primary"
-                                                : "hover:bg-bg-off border-l-2 border-transparent text-text-main"
+                                                ? "bg-amber-50 border-l-2 border-amber-500 text-slate-900"
+                                                : "hover:bg-slate-50 border-l-2 border-transparent text-slate-800"
                                             }`}
                                     >
                                         {/* Thumbnail */}
-                                        <div className="relative w-10 h-10 rounded-md border border-border-subtle bg-bg-main overflow-hidden shrink-0 shadow-sm">
+                                        <div className="relative w-10 h-10 rounded-md border border-slate-200 bg-slate-100 overflow-hidden shrink-0 shadow-sm">
                                             <Image
                                                 src={imgSrc}
                                                 alt={p.name}
@@ -218,21 +225,25 @@ export default function HeaderSearch() {
                                         {/* Content */}
                                         <div className="flex-1 min-w-0 pt-0.5">
                                             <div className="flex items-start justify-between gap-2">
-                                                <h4 className="text-xs font-extrabold truncate leading-tight">
+                                                <h4 className="text-xs font-bold truncate leading-tight text-slate-900">
                                                     {p.name}
                                                 </h4>
-                                                <span className="text-[9px] shrink-0 font-extrabold uppercase tracking-wider text-accent bg-accent/10 border border-accent/20 px-1.5 py-0.5 rounded">
-                                                    {p.brand.name}
-                                                </span>
+                                                {p.brand?.name && (
+                                                    <span className="text-xs shrink-0 font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">
+                                                        {p.brand.name}
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-[10px] text-text-muted font-medium">
-                                                    {p.category.name}
-                                                </span>
-                                                {p.variants?.[0] && (
+                                                {p.category?.name && (
+                                                    <span className="text-xs text-slate-500 font-medium">
+                                                        {p.category.name}
+                                                    </span>
+                                                )}
+                                                {p.variants?.[0]?.weightOrSize && (
                                                     <>
-                                                        <span className="w-1 h-1 rounded-full bg-border-subtle"></span>
-                                                        <span className="text-[10px] font-bold text-primary">
+                                                        <span className="w-1 h-1 rounded-full bg-slate-300" />
+                                                        <span className="text-xs font-bold text-slate-700">
                                                             {p.variants[0].weightOrSize}
                                                         </span>
                                                     </>
@@ -249,9 +260,9 @@ export default function HeaderSearch() {
                     <Link
                         href={`/products?search=${encodeURIComponent(query)}`}
                         onClick={() => setIsOpen(false)}
-                        className="block text-center py-2.5 bg-primary text-xs font-bold text-bg-main hover:bg-primary-hover transition-colors"
+                        className="block text-center py-2.5 bg-slate-900 text-xs font-bold text-amber-400 hover:bg-slate-950 transition-colors border-t border-slate-100"
                     >
-                        View all results for &quot;{query}&quot;
+                        View all results for &quot;{query}&quot; →
                     </Link>
                 </div>
             )}
