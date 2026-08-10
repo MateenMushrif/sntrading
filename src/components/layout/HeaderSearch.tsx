@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Search, Loader2, X, Tag } from "lucide-react";
@@ -34,21 +34,43 @@ export default function HeaderSearch() {
     const [selectedIndex, setSelectedIndex] = useState(-1);
 
     const router = useRouter();
+    const pathname = usePathname();
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null); // ✅ Ref to blur input on submit
+    const inputRef = useRef<HTMLInputElement>(null);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Derived state check: reset dropdown when query is short
+    // Sync route change: close and clear search dropdown when page changes
+    const [prevPathname, setPrevPathname] = useState(pathname);
+    if (pathname !== prevPathname) {
+        setPrevPathname(pathname);
+        setIsOpen(false);
+        setResults({ products: [], categories: [] });
+    }
+
     const isQueryValid = query.trim().length >= 2;
+
+    // Reset dropdown state when query is short
     if (!isQueryValid && (results.products.length > 0 || results.categories.length > 0 || isOpen)) {
         setResults({ products: [], categories: [] });
         setIsOpen(false);
     }
 
+    // Helper to immediately cancel pending fetches and close the modal
+    const closeAndResetSearch = () => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+        setIsOpen(false);
+        setResults({ products: [], categories: [] });
+        inputRef.current?.blur();
+    };
+
     // Debounced search fetcher
     useEffect(() => {
         if (!isQueryValid) return;
 
-        const timer = setTimeout(async () => {
+        timeoutRef.current = setTimeout(async () => {
             setLoading(true);
             try {
                 const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
@@ -68,7 +90,11 @@ export default function HeaderSearch() {
             }
         }, 200);
 
-        return () => clearTimeout(timer);
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
     }, [query, isQueryValid]);
 
     // Close dropdown on outside click
@@ -96,35 +122,30 @@ export default function HeaderSearch() {
                 e.preventDefault();
                 const p = results.products[selectedIndex];
                 if (p?.slug) {
-                    inputRef.current?.blur(); // ✅ Dismiss keyboard / blur input
+                    closeAndResetSearch();
                     router.push(`/products/${p.slug}`);
-                    setIsOpen(false);
                 }
             } else if (query.trim()) {
                 e.preventDefault();
-                inputRef.current?.blur(); // ✅ Dismiss keyboard / blur input
+                closeAndResetSearch();
                 router.push(`/products?search=${encodeURIComponent(query.trim())}`);
-                setIsOpen(false);
             }
         } else if (e.key === "Escape") {
-            inputRef.current?.blur();
-            setIsOpen(false);
+            closeAndResetSearch();
         }
     };
 
     const handleClear = () => {
         setQuery("");
-        setResults({ products: [], categories: [] });
-        setIsOpen(false);
+        closeAndResetSearch();
         inputRef.current?.focus();
     };
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (query.trim()) {
-            inputRef.current?.blur(); // ✅ Dismiss keyboard / blur input
+            closeAndResetSearch();
             router.push(`/products?search=${encodeURIComponent(query.trim())}`);
-            setIsOpen(false);
         }
     };
 
@@ -184,10 +205,7 @@ export default function HeaderSearch() {
                                     <Link
                                         key={cat.id}
                                         href={`/products?category=${cat.slug}`}
-                                        onClick={() => {
-                                            inputRef.current?.blur();
-                                            setIsOpen(false);
-                                        }}
+                                        onClick={closeAndResetSearch}
                                         className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-800 hover:border-amber-400 hover:text-amber-600 shadow-sm transition-all"
                                     >
                                         <Tag className="w-2.5 h-2.5 text-amber-500" />
@@ -215,10 +233,7 @@ export default function HeaderSearch() {
                                     <Link
                                         key={p.id}
                                         href={`/products/${p.slug}`}
-                                        onClick={() => {
-                                            inputRef.current?.blur();
-                                            setIsOpen(false);
-                                        }}
+                                        onClick={closeAndResetSearch}
                                         className={`flex items-start gap-3 p-2 rounded-lg transition-all ${isSelected
                                                 ? "bg-amber-50 border-l-2 border-amber-500 text-slate-900"
                                                 : "hover:bg-slate-50 border-l-2 border-transparent text-slate-800"
@@ -272,10 +287,7 @@ export default function HeaderSearch() {
                     {/* Bottom Action Bar */}
                     <Link
                         href={`/products?search=${encodeURIComponent(query)}`}
-                        onClick={() => {
-                            inputRef.current?.blur();
-                            setIsOpen(false);
-                        }}
+                        onClick={closeAndResetSearch}
                         className="block text-center py-2.5 bg-slate-900 text-xs font-bold text-amber-400 hover:bg-slate-950 transition-colors border-t border-slate-100"
                     >
                         View all results for &quot;{query}&quot; →
