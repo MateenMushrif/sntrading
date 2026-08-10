@@ -21,8 +21,24 @@ export function useProducts(initialParams: GetProductsParams = {}) {
     // Track request sequence to prevent out-of-order race conditions
     const requestCountRef = useRef(0);
 
-    // Serialize params to avoid re-triggering effects on un-memoized object references
+    // Sync state during render when initialParams change from URL searchParams
+    const serializedInitial = JSON.stringify(initialParams);
+    const [prevInitial, setPrevInitial] = useState(serializedInitial);
+
+    if (serializedInitial !== prevInitial) {
+        setPrevInitial(serializedInitial);
+        setParams(initialParams);
+        setLoading(true); // ✅ Set loading synchronously during render pass when params change
+    }
+
+    // Track previous params to trigger loading state synchronously on setParams calls
     const serializedParams = JSON.stringify(params);
+    const [prevParams, setPrevParams] = useState(serializedParams);
+
+    if (serializedParams !== prevParams) {
+        setPrevParams(serializedParams);
+        setLoading(true); // ✅ Set loading synchronously during render pass when params change
+    }
 
     // Manual refetch function for UI actions (e.g. pull-to-refresh or retry buttons)
     const loadProducts = useCallback(async () => {
