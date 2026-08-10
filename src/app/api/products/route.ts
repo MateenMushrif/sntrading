@@ -40,17 +40,18 @@ export async function GET(request: NextRequest) {
         if (search) {
             where.OR = [
                 { name: { contains: search, mode: "insensitive" } },
+                { shortDescription: { contains: search, mode: "insensitive" } },
                 { variants: { some: { sku: { contains: search, mode: "insensitive" } } } },
                 { variants: { some: { name: { contains: search, mode: "insensitive" } } } },
             ];
         }
 
+        // ✅ Ultra-lightweight card projection (Zero JOINs on variants/specs during listing)
         const [products, total] = await Promise.all([
             prisma.product.findMany({
                 where,
                 skip,
                 take: limit,
-                // ✅ Selective DB fields for high-speed listing queries
                 select: {
                     id: true,
                     name: true,
@@ -61,18 +62,19 @@ export async function GET(request: NextRequest) {
                     isLatest: true,
                     displayOrder: true,
                     createdAt: true,
-                    brand: {
-                        select: { id: true, name: true, slug: true, logo: true },
-                    },
                     category: {
+                        select: { id: true, name: true, slug: true },
+                    },
+                    brand: {
                         select: { id: true, name: true, slug: true },
                     },
                     thumbnailImage: {
                         select: { id: true, secureUrl: true, altText: true },
                     },
-                    variants: {
-                        orderBy: { displayOrder: "asc" },
-                        select: { id: true, name: true, weightOrSize: true, sku: true, displayOrder: true },
+                    // Fetch only 1 fallback gallery image if thumbnail is null
+                    images: {
+                        take: 1,
+                        select: { id: true, secureUrl: true, altText: true },
                     },
                 },
                 orderBy: { createdAt: "desc" },
@@ -92,8 +94,8 @@ export async function GET(request: NextRequest) {
             },
             {
                 headers: {
-                    // ✅ Edge caching: cached at CDN for 60s, stale-while-revalidate for 300s
-                    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+                    // ✅ Aggressive Edge CDN Caching
+                    "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600",
                 },
             }
         );
@@ -140,7 +142,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate if thumbnailImageId exists in ProductImage table
         let validThumbnailImageId: string | undefined = undefined;
         if (typeof thumbnailImageId === "string" && thumbnailImageId.trim() !== "") {
             const existingImage = await prisma.productImage.findUnique({
@@ -151,7 +152,6 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Sanitize specifications
         const specsToCreate = Array.isArray(specifications)
             ? specifications
                 .filter((s: { label?: string; value?: string }) => s.label?.trim() && s.value?.trim())
@@ -162,7 +162,6 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
-        // Sanitize features
         const featuresToCreate = Array.isArray(features)
             ? features
                 .filter((f: { feature?: string; text?: string }) => (f.feature || f.text)?.trim())
@@ -172,7 +171,6 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
-        // Sanitize applications
         const applicationsToCreate = Array.isArray(applications)
             ? applications
                 .filter((a: { application?: string; text?: string; name?: string }) =>
@@ -184,7 +182,6 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
-        // Sanitize variants
         const variantsToCreate = Array.isArray(variants)
             ? variants
                 .filter((v: { name?: string; weightOrSize?: string; size?: string }) =>
@@ -206,7 +203,6 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
-        // Sanitize gallery images
         const galleryToCreate = Array.isArray(images)
             ? images
                 .filter((img: { secureUrl?: string }) => img.secureUrl?.trim())
@@ -219,7 +215,6 @@ export async function POST(request: NextRequest) {
                 }))
             : [];
 
-        // Build ProductCreateInput with robust boolean parsing
         const productData: Prisma.ProductCreateInput = {
             name: name.trim(),
             slug: slug.trim(),
@@ -265,8 +260,8 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        // ✅ Purge storefront home page cache instantly
         revalidatePath("/");
+        revalidatePath("/products");
 
         return NextResponse.json(newProduct, { status: 201 });
     } catch (error: unknown) {
