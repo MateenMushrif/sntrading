@@ -36,11 +36,11 @@ function ProductCardComponent({ product, onQuickView }: ProductCardProps) {
     return (
         <div
             onClick={handleCardClick}
-            className="group w-full text-left cursor-pointer bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-amber-400 transition-all duration-300 flex flex-col h-full overflow-hidden select-none"
+            className="group w-full text-left cursor-pointer bg-white rounded-xl border border-gray-200 shadow-xs hover:shadow-xl hover:border-amber-400 transition-all duration-300 flex flex-col h-full overflow-hidden select-none"
         >
             <div className="relative w-full aspect-video bg-gray-50 flex items-center justify-center border-b border-gray-100 overflow-hidden shrink-0">
                 <div className="absolute top-2 left-2 z-10 flex items-center gap-1 pointer-events-none">
-                    <span className="bg-slate-900 text-amber-400 text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded shadow-sm">
+                    <span className="bg-slate-900 text-amber-400 text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded shadow-xs">
                         SN Wholesale
                     </span>
                 </div>
@@ -51,7 +51,7 @@ function ProductCardComponent({ product, onQuickView }: ProductCardProps) {
                         alt={product.thumbnailImage?.altText || product.name}
                         fill
                         className="object-cover w-full h-full pointer-events-none"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                     />
                 </div>
 
