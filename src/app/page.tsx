@@ -13,6 +13,21 @@ interface SectionConfig {
   columns: 2 | 3 | 4 | 6;
 }
 
+// Generates dynamic grid classes matching the published column setting from NeonDB
+const getColumnClassName = (cols: number) => {
+  switch (cols) {
+    case 2:
+      return "grid-cols-2 gap-3";
+    case 3:
+      return "grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4";
+    case 4:
+      return "grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4";
+    case 6:
+    default:
+      return "grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 xl:grid-cols-6";
+  }
+};
+
 export default async function Home() {
   // 1. Fetch Storefront Sections, Hero Slides & Catalog Data from DB in Parallel
   const [dbSections, dbSlides, categories, products] = await Promise.all([
@@ -59,7 +74,7 @@ export default async function Home() {
     }),
   ]);
 
-  // Map PostgreSQL null values and string types so TypeScript matches HeroSlide exact types
+  // Map PostgreSQL records to HeroSlide prop types
   const slides: HeroSlide[] = dbSlides.map((s) => ({
     id: s.id,
     badge: s.badge ?? undefined,
@@ -103,7 +118,13 @@ export default async function Home() {
         }
 
         if (sec.type === "featured_products") {
-          return <FeaturedProducts key={sec.id} products={products} />;
+          return (
+            <FeaturedProducts
+              key={sec.id}
+              products={products}
+              gridClassName={getColumnClassName(sec.columns)}
+            />
+          );
         }
 
         return null;
