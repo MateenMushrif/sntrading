@@ -16,16 +16,6 @@ enum ProductStatus {
 }
 
 // ------------------------------------------------------
-// Storefront Configuration
-// ------------------------------------------------------
-
-model StorefrontConfig {
-  id        String   @id @default("default")
-  config    Json     // Stores sections order, enabled state, grid columns & slides
-  updatedAt DateTime @updatedAt
-}
-
-// ------------------------------------------------------
 // PRODUCTS
 // ------------------------------------------------------
 
@@ -393,4 +383,40 @@ model ActivityLog {
 
   staffId          String?
   staff            Staff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
+}
+
+
+// ------------------------------------------------------
+// STOREFRONT LAYOUT & HERO CAROUSEL PERSISTENCE
+// ------------------------------------------------------
+
+model HeroSlide {
+  id          String   @id @default(cuid())
+  badge       String?
+  title       String
+  subtitle    String
+  ctaText     String?
+  actionType  String   @default("products")
+  actionValue String?
+  bgType      String   @default("gradient") // "image" | "gradient" | "solid"
+  bgValue     String?  // Cloudinary image URL or CSS gradient
+  displayOrder Int     @default(0)
+  isEnabled   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([displayOrder])
+}
+
+model StorefrontSection {
+  id          String   @id @default(cuid())
+  sectionKey  String   @unique // "sec-hero" | "sec-search-categories" | "sec-featured-products"
+  type        String   // "hero" | "search_categories" | "featured_products"
+  title       String
+  enabled     Boolean  @default(true)
+  columns     Int      @default(6) // 2 | 3 | 4 | 6
+  displayOrder Int     @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@index([displayOrder])
 }

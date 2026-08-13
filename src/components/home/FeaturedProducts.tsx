@@ -3,9 +3,13 @@ import { Product } from "@/types/product";
 
 interface FeaturedProductsProps {
     products?: Product[];
+    gridClassName?: string;
 }
 
-export default function FeaturedProducts({ products = [] }: FeaturedProductsProps) {
+export default function FeaturedProducts({
+    products = [],
+    gridClassName = "grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 xl:grid-cols-6",
+}: FeaturedProductsProps) {
     if (!products.length) return null;
 
     return (
@@ -20,10 +24,9 @@ export default function FeaturedProducts({ products = [] }: FeaturedProductsProp
                     </p>
                 </div>
 
-                {/* Uses 6 columns on XL screens for 12 featured items */}
                 <ProductGrid
                     products={products}
-                    gridClassName="grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 xl:grid-cols-6"
+                    gridClassName={gridClassName}
                 />
             </div>
         </section>

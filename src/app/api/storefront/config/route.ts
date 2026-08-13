@@ -5,46 +5,123 @@ import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
-// GET: Serve published config to Homepage & Tauri App
 export async function GET() {
-  try {
-    const record = await prisma.storefrontConfig.findUnique({
-      where: { id: "default" },
-    });
+    try {
+        const [sections, slides] = await Promise.all([
+            prisma.storefrontSection.findMany({
+                orderBy: { displayOrder: "asc" },
+            }),
+            prisma.HeroSlide.findMany({
+                where: { isEnabled: true },
+                orderBy: { displayOrder: "asc" },
+            }),
+        ]);
 
-    if (!record) {
-      return NextResponse.json(null);
+        return NextResponse.json({
+            sections: sections.map((s) => ({
+                id: s.sectionKey,
+                type: s.type,
+                title: s.title,
+                enabled: s.enabled,
+                columns: s.columns,
+            })),
+            slides,
+        });
+    } catch (error) {
+        console.error("GET /api/storefront/config error:", error);
+        return NextResponse.json({ error: "Failed to fetch storefront config" }, { status: 500 });
     }
-
-    return NextResponse.json(record.config);
-  } catch (error) {
-    console.error("GET /api/storefront/config error:", error);
-    return NextResponse.json({ error: "Failed to fetch config" }, { status: 500 });
-  }
 }
 
-// POST: Save published config from Tauri Admin App
 export async function POST(request: NextRequest) {
-  const auth = await validateDeviceToken(request);
-  if (!auth.isValid) {
-    return auth.response;
-  }
+    const auth = await validateDeviceToken(request);
+    if (!auth.isValid) {
+        return auth.response;
+    }
 
-  try {
-    const body = await request.json();
+    try {
+        const body = await request.json();
+        const { sections, slides } = body;
 
-    const updated = await prisma.storefrontConfig.upsert({
-      where: { id: "default" },
-      update: { config: body },
-      create: { id: "default", config: body },
-    });
+        // 1. Sync sections & grid columns to PostgreSQL
+        if (Array.isArray(sections)) {
+            for (let i = 0; i < sections.length; i++) {
+                const sec = sections[i];
+                await prisma.storefrontSection.upsert({
+                    where: { sectionKey: sec.id },
+                    update: {
+                        type: sec.type,
+                        title: sec.title,
+                        enabled: Boolean(sec.enabled),
+                        columns: Number(sec.columns) || 6,
+                        displayOrder: i + 1,
+                    },
+                    create: {
+                        sectionKey: sec.id,
+                        type: sec.type,
+                        title: sec.title,
+                        enabled: Boolean(sec.enabled),
+                        columns: Number(sec.columns) || 6,
+                        displayOrder: i + 1,
+                    },
+                });
+            }
+        }
 
-    // Invalidate Next.js cache so the public homepage updates instantly
-    revalidatePath("/");
+        // 2. Sync Hero Slides to PostgreSQL
+        if (Array.isArray(slides)) {
+            for (let i = 0; i < slides.length; i++) {
+                const slide = slides[i];
+                const slideId = String(slide.id).startsWith("slide_") || typeof slide.id === "number" ? undefined : String(slide.id);
 
-    return NextResponse.json({ success: true, config: updated.config });
-  } catch (error) {
-    console.error("POST /api/storefront/config error:", error);
-    return NextResponse.json({ error: "Failed to save config" }, { status: 500 });
-  }
+                if (slideId) {
+                    await prisma.HeroSlide.upsert({
+                        where: { id: slideId },
+                        update: {
+                            badge: slide.badge || null,
+                            title: slide.title,
+                            subtitle: slide.subtitle,
+                            ctaText: slide.ctaText || null,
+                            actionType: slide.actionType || "products",
+                            actionValue: slide.actionValue || null,
+                            bgType: slide.bgType || "gradient",
+                            bgValue: slide.bgValue || null,
+                            displayOrder: i + 1,
+                        },
+                        create: {
+                            badge: slide.badge || null,
+                            title: slide.title,
+                            subtitle: slide.subtitle,
+                            ctaText: slide.ctaText || null,
+                            actionType: slide.actionType || "products",
+                            actionValue: slide.actionValue || null,
+                            bgType: slide.bgType || "gradient",
+                            bgValue: slide.bgValue || null,
+                            displayOrder: i + 1,
+                        },
+                    });
+                } else {
+                    await prisma.HeroSlide.create({
+                        data: {
+                            badge: slide.badge || null,
+                            title: slide.title,
+                            subtitle: slide.subtitle,
+                            ctaText: slide.ctaText || null,
+                            actionType: slide.actionType || "products",
+                            actionValue: slide.actionValue || null,
+                            bgType: slide.bgType || "gradient",
+                            bgValue: slide.bgValue || null,
+                            displayOrder: i + 1,
+                        },
+                    });
+                }
+            }
+        }
+
+        revalidatePath("/");
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("POST /api/storefront/config error:", error);
+        return NextResponse.json({ error: "Failed to publish storefront configuration" }, { status: 500 });
+    }
 }
