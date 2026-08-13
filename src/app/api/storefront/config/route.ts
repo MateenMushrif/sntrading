@@ -5,13 +5,33 @@ import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
+interface SectionPayload {
+    id: string;
+    type: string;
+    title: string;
+    enabled: boolean;
+    columns?: number;
+}
+
+interface SlidePayload {
+    id: string | number;
+    badge?: string | null;
+    title: string;
+    subtitle: string;
+    ctaText?: string | null;
+    actionType?: string;
+    actionValue?: string | null;
+    bgType?: string;
+    bgValue?: string | null;
+}
+
 export async function GET() {
     try {
         const [sections, slides] = await Promise.all([
             prisma.storefrontSection.findMany({
                 orderBy: { displayOrder: "asc" },
             }),
-            prisma.HeroSlide.findMany({
+            prisma.heroSlide.findMany({
                 where: { isEnabled: true },
                 orderBy: { displayOrder: "asc" },
             }),
@@ -40,7 +60,10 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const body = await request.json();
+        const body = (await request.json()) as {
+            sections?: SectionPayload[];
+            slides?: SlidePayload[];
+        };
         const { sections, slides } = body;
 
         // 1. Sync sections & grid columns to PostgreSQL
@@ -72,10 +95,11 @@ export async function POST(request: NextRequest) {
         if (Array.isArray(slides)) {
             for (let i = 0; i < slides.length; i++) {
                 const slide = slides[i];
-                const slideId = String(slide.id).startsWith("slide_") || typeof slide.id === "number" ? undefined : String(slide.id);
+                const rawId = String(slide.id);
+                const slideId = rawId.startsWith("slide_") || typeof slide.id === "number" ? undefined : rawId;
 
                 if (slideId) {
-                    await prisma.HeroSlide.upsert({
+                    await prisma.heroSlide.upsert({
                         where: { id: slideId },
                         update: {
                             badge: slide.badge || null,
@@ -101,7 +125,7 @@ export async function POST(request: NextRequest) {
                         },
                     });
                 } else {
-                    await prisma.HeroSlide.create({
+                    await prisma.heroSlide.create({
                         data: {
                             badge: slide.badge || null,
                             title: slide.title,

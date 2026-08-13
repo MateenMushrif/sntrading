@@ -1,4 +1,4 @@
-import HeroCarousel from "@/components/home/HeroCarousel";
+import HeroCarousel, { HeroSlide, ActionType } from "@/components/home/HeroCarousel";
 import SearchAndCategories from "@/components/home/SearchAndCategories";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import { prisma } from "@/lib/prisma";
@@ -14,9 +14,17 @@ interface SectionConfig {
 }
 
 export default async function Home() {
-  // 1. Fetch Storefront Config & Live Data in Parallel
-  const [configRecord, categories, products] = await Promise.all([
-    prisma.storefrontConfig.findUnique({ where: { id: "default" } }).catch(() => null),
+  // 1. Fetch Storefront Sections, Hero Slides & Catalog Data from DB in Parallel
+  const [dbSections, dbSlides, categories, products] = await Promise.all([
+    prisma.storefrontSection.findMany({
+      orderBy: { displayOrder: "asc" },
+    }).catch(() => []),
+
+    prisma.heroSlide.findMany({
+      where: { isEnabled: true },
+      orderBy: { displayOrder: "asc" },
+    }).catch(() => []),
+
     prisma.category.findMany({
       where: { isFeatured: true },
       take: 12,
@@ -30,6 +38,7 @@ export default async function Home() {
       },
       orderBy: { displayOrder: "asc" },
     }),
+
     prisma.product.findMany({
       where: { status: "ACTIVE", isFeatured: true },
       take: 12,
@@ -50,14 +59,35 @@ export default async function Home() {
     }),
   ]);
 
-  const config = configRecord?.config as { sections?: SectionConfig[]; slides?: any[] } | null;
+  // Map PostgreSQL null values and string types so TypeScript matches HeroSlide exact types
+  const slides: HeroSlide[] = dbSlides.map((s) => ({
+    id: s.id,
+    badge: s.badge ?? undefined,
+    title: s.title,
+    subtitle: s.subtitle,
+    ctaText: s.ctaText ?? undefined,
+    actionType: (s.actionType as ActionType) || "products",
+    actionValue: s.actionValue ?? undefined,
+    bgType: (s.bgType as "image" | "gradient" | "solid") || "gradient",
+    bgValue: s.bgValue ?? undefined,
+  }));
 
-  // Default fallback layout if config hasn't been saved yet
-  const sections: SectionConfig[] = config?.sections || [
+  // Default fallback section config if database table is empty
+  const defaultSections: SectionConfig[] = [
     { id: "sec-hero", type: "hero", title: "Hero Carousel", enabled: true, columns: 4 },
     { id: "sec-search-categories", type: "search_categories", title: "Featured Categories", enabled: true, columns: 6 },
     { id: "sec-featured-products", type: "featured_products", title: "Featured Bakery Products", enabled: true, columns: 6 },
   ];
+
+  const sections: SectionConfig[] = dbSections.length > 0
+    ? dbSections.map((s) => ({
+      id: s.sectionKey,
+      type: s.type as "hero" | "search_categories" | "featured_products",
+      title: s.title,
+      enabled: s.enabled,
+      columns: (s.columns as 2 | 3 | 4 | 6) || 6,
+    }))
+    : defaultSections;
 
   return (
     <div className="max-w-7xl mx-auto px-2 sm:px-3 md:px-4 flex flex-col gap-4 md:gap-6">
@@ -65,7 +95,7 @@ export default async function Home() {
         if (!sec.enabled) return null;
 
         if (sec.type === "hero") {
-          return <HeroCarousel key={sec.id} slides={config?.slides} />;
+          return <HeroCarousel key={sec.id} slides={slides.length > 0 ? slides : undefined} />;
         }
 
         if (sec.type === "search_categories") {
