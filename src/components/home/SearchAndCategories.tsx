@@ -17,9 +17,13 @@ interface CategoryWithCount {
 
 interface SearchAndCategoriesProps {
     categories: CategoryWithCount[];
+    gridClassName?: string;
 }
 
-export default function SearchAndCategories({ categories }: SearchAndCategoriesProps) {
+export default function SearchAndCategories({
+    categories,
+    gridClassName = "grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6",
+}: SearchAndCategoriesProps) {
     if (!categories || categories.length === 0) return null;
 
     return (
@@ -35,15 +39,15 @@ export default function SearchAndCategories({ categories }: SearchAndCategoriesP
                     </p>
                 </div>
 
-                {/* Categories Grid */}
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
+                {/* Categories Grid with Dynamic Prop */}
+                <div className={`grid ${gridClassName}`}>
                     {categories.map((cat) => {
                         const targetSlug = cat.slug || cat.id;
 
                         return (
                             <Link
                                 key={cat.id}
-                                href={`/categories/${targetSlug}`} // ✅ Canonical slug link (Eliminates 308 redirect)
+                                href={`/categories/${targetSlug}`}
                                 className="group flex flex-col justify-between overflow-hidden rounded-xl border border-border-subtle bg-bg-main transition-all hover:border-accent hover:shadow-md"
                             >
                                 <div>

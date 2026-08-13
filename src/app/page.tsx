@@ -13,8 +13,8 @@ interface SectionConfig {
   columns: 2 | 3 | 4 | 6;
 }
 
-// Generates dynamic grid classes matching the published column setting from NeonDB
-const getColumnClassName = (cols: number) => {
+// Complete static class mapping so Tailwind never purges these grid rules
+const getGridClassName = (cols: number): string => {
   switch (cols) {
     case 2:
       return "grid-cols-2 gap-3";
@@ -29,7 +29,6 @@ const getColumnClassName = (cols: number) => {
 };
 
 export default async function Home() {
-  // 1. Fetch Storefront Sections, Hero Slides & Catalog Data from DB in Parallel
   const [dbSections, dbSlides, categories, products] = await Promise.all([
     prisma.storefrontSection.findMany({
       orderBy: { displayOrder: "asc" },
@@ -74,7 +73,6 @@ export default async function Home() {
     }),
   ]);
 
-  // Map PostgreSQL records to HeroSlide prop types
   const slides: HeroSlide[] = dbSlides.map((s) => ({
     id: s.id,
     badge: s.badge ?? undefined,
@@ -87,7 +85,6 @@ export default async function Home() {
     bgValue: s.bgValue ?? undefined,
   }));
 
-  // Default fallback section config if database table is empty
   const defaultSections: SectionConfig[] = [
     { id: "sec-hero", type: "hero", title: "Hero Carousel", enabled: true, columns: 4 },
     { id: "sec-search-categories", type: "search_categories", title: "Featured Categories", enabled: true, columns: 6 },
@@ -114,7 +111,13 @@ export default async function Home() {
         }
 
         if (sec.type === "search_categories") {
-          return <SearchAndCategories key={sec.id} categories={categories} />;
+          return (
+            <SearchAndCategories
+              key={sec.id}
+              categories={categories}
+              gridClassName={getGridClassName(sec.columns)}
+            />
+          );
         }
 
         if (sec.type === "featured_products") {
@@ -122,7 +125,7 @@ export default async function Home() {
             <FeaturedProducts
               key={sec.id}
               products={products}
-              gridClassName={getColumnClassName(sec.columns)}
+              gridClassName={getGridClassName(sec.columns)}
             />
           );
         }
