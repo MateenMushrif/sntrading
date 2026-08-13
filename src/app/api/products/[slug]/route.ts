@@ -90,7 +90,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         const updateData: Prisma.ProductUncheckedUpdateInput = {};
 
-        // Parse boolean fields reliably
+        // Parse boolean fields reliably for quick star toggling
         const parsedIsFeatured = parseBoolean(body.isFeatured);
         if (parsedIsFeatured !== undefined) {
             updateData.isFeatured = parsedIsFeatured;
@@ -231,8 +231,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             include: productIncludeConfig,
         });
 
-        // ✅ Purge storefront home page cache instantly on update
+        // Purge Next.js cache so public pages refresh instantly
         revalidatePath("/");
+        revalidatePath("/products");
 
         return NextResponse.json(updated);
     } catch (error: unknown) {
@@ -265,8 +266,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
         await prisma.product.delete({ where: { id: existing.id } });
 
-        // ✅ Purge storefront home page cache instantly on delete
         revalidatePath("/");
+        revalidatePath("/products");
 
         return NextResponse.json({ message: "Product deleted successfully" });
     } catch (error: unknown) {

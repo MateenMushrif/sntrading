@@ -42,7 +42,6 @@ export async function GET(request: NextRequest) {
             ];
         }
 
-        // ✅ Ultra-light selection (Zero JOINs on variants, specs, or gallery images)
         const [products, total] = await Promise.all([
             prisma.product.findMany({
                 where,
@@ -53,13 +52,17 @@ export async function GET(request: NextRequest) {
                     name: true,
                     slug: true,
                     shortDescription: true,
+                    isFeatured: true, // ✅ CRITICAL FIX: EXPLICITLY RETURN isFeatured
+                    isLatest: true,   // ✅ EXPLICITLY RETURN isLatest
                     category: {
+                        select: { id: true, name: true, slug: true },
+                    },
+                    brand: {
                         select: { id: true, name: true, slug: true },
                     },
                     thumbnailImage: {
                         select: { id: true, secureUrl: true, altText: true },
                     },
-                    // ✅ Include specifications directly so QuickView opens instantly with NO extra network calls!
                     specifications: {
                         select: { id: true, label: true, value: true },
                         orderBy: { displayOrder: "asc" },
@@ -82,7 +85,6 @@ export async function GET(request: NextRequest) {
             },
             {
                 headers: {
-                    // Cache CDN responses for 2 minutes
                     "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600",
                 },
             }

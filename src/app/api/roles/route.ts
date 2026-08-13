@@ -43,4 +43,4 @@ export async function POST(request: NextRequest) {
         console.error("POST /api/roles error:", error);
         return NextResponse.json({ error: "Failed to create role" }, { status: 500 });
     }
-}
+} 
