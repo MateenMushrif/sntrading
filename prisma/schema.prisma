@@ -16,6 +16,16 @@ enum ProductStatus {
 }
 
 // ------------------------------------------------------
+// Storefront Configuration
+// ------------------------------------------------------
+
+model StorefrontConfig {
+  id        String   @id @default("default")
+  config    Json     // Stores sections order, enabled state, grid columns & slides
+  updatedAt DateTime @updatedAt
+}
+
+// ------------------------------------------------------
 // PRODUCTS
 // ------------------------------------------------------
 

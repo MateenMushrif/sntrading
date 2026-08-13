@@ -1,45 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { validateDeviceToken } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-// Temporary in-memory / file cache store for published layout config
-let globalStorefrontConfig = {
-    sections: [
-        { id: "sec-hero", type: "hero", title: "Hero Carousel", enabled: true, columns: 4 },
-        { id: "sec-search-categories", type: "search_categories", title: "Featured Categories", enabled: true, columns: 6 },
-        { id: "sec-featured-products", type: "featured_products", title: "Featured Bakery Products", enabled: true, columns: 6 },
-    ],
-    slides: [],
-    autoPlayInterval: 4000,
-};
+export const dynamic = "force-dynamic";
 
+// GET: Serve published config to Homepage & Tauri App
 export async function GET() {
-    return NextResponse.json(globalStorefrontConfig, {
-        headers: {
-            "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
-        },
+  try {
+    const record = await prisma.storefrontConfig.findUnique({
+      where: { id: "default" },
     });
+
+    if (!record) {
+      return NextResponse.json(null);
+    }
+
+    return NextResponse.json(record.config);
+  } catch (error) {
+    console.error("GET /api/storefront/config error:", error);
+    return NextResponse.json({ error: "Failed to fetch config" }, { status: 500 });
+  }
 }
 
+// POST: Save published config from Tauri Admin App
 export async function POST(request: NextRequest) {
-    const auth = await validateDeviceToken(request);
-    if (!auth.isValid) {
-        return auth.response;
-    }
+  const auth = await validateDeviceToken(request);
+  if (!auth.isValid) {
+    return auth.response;
+  }
 
-    try {
-        const body = await request.json();
-        globalStorefrontConfig = {
-            ...globalStorefrontConfig,
-            ...body,
-        };
+  try {
+    const body = await request.json();
 
-        // Purge Next.js homepage cache so public visitors see updated layout instantly
-        revalidatePath("/");
+    const updated = await prisma.storefrontConfig.upsert({
+      where: { id: "default" },
+      update: { config: body },
+      create: { id: "default", config: body },
+    });
 
-        return NextResponse.json({ success: true, config: globalStorefrontConfig });
-    } catch (error) {
-        console.error("POST /api/storefront/config error:", error);
-        return NextResponse.json({ error: "Failed to update storefront config" }, { status: 500 });
-    }
+    // Invalidate Next.js cache so the public homepage updates instantly
+    revalidatePath("/");
+
+    return NextResponse.json({ success: true, config: updated.config });
+  } catch (error) {
+    console.error("POST /api/storefront/config error:", error);
+    return NextResponse.json({ error: "Failed to save config" }, { status: 500 });
+  }
 }
