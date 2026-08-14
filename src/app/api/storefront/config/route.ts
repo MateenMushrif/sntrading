@@ -91,16 +91,18 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // 2. Sync Hero Slides to PostgreSQL
+        // 2. Sync Hero Slides & PURGE REMOVED SLIDES from PostgreSQL
         if (Array.isArray(slides)) {
+            const keptSlideIds: string[] = [];
+
             for (let i = 0; i < slides.length; i++) {
                 const slide = slides[i];
                 const rawId = String(slide.id);
-                const slideId = rawId.startsWith("slide_") || typeof slide.id === "number" ? undefined : rawId;
+                const isExistingDbId = !rawId.startsWith("slide_") && isNaN(Number(slide.id));
 
-                if (slideId) {
-                    await prisma.heroSlide.upsert({
-                        where: { id: slideId },
+                if (isExistingDbId) {
+                    const updated = await prisma.heroSlide.upsert({
+                        where: { id: rawId },
                         update: {
                             badge: slide.badge || null,
                             title: slide.title,
@@ -111,8 +113,10 @@ export async function POST(request: NextRequest) {
                             bgType: slide.bgType || "gradient",
                             bgValue: slide.bgValue || null,
                             displayOrder: i + 1,
+                            isEnabled: true,
                         },
                         create: {
+                            id: rawId,
                             badge: slide.badge || null,
                             title: slide.title,
                             subtitle: slide.subtitle,
@@ -122,10 +126,12 @@ export async function POST(request: NextRequest) {
                             bgType: slide.bgType || "gradient",
                             bgValue: slide.bgValue || null,
                             displayOrder: i + 1,
+                            isEnabled: true,
                         },
                     });
+                    keptSlideIds.push(updated.id);
                 } else {
-                    await prisma.heroSlide.create({
+                    const created = await prisma.heroSlide.create({
                         data: {
                             badge: slide.badge || null,
                             title: slide.title,
@@ -136,10 +142,19 @@ export async function POST(request: NextRequest) {
                             bgType: slide.bgType || "gradient",
                             bgValue: slide.bgValue || null,
                             displayOrder: i + 1,
+                            isEnabled: true,
                         },
                     });
+                    keptSlideIds.push(created.id);
                 }
             }
+
+            // Permanently delete any slide that was removed from the admin client
+            await prisma.heroSlide.deleteMany({
+                where: {
+                    id: { notIn: keptSlideIds },
+                },
+            });
         }
 
         revalidatePath("/");

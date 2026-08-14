@@ -28,17 +28,17 @@ interface HeroCarouselProps {
 
 const defaultSlides: HeroSlide[] = [
     {
-        id: 1,
+        id: "slide_1",
         badge: "SN Trading Exclusive",
         title: "Premium Wholesale Bakery Ingredients",
         subtitle: "Direct B2B supply of chocolate, cocoa powders, and essential baking raw materials.",
         ctaText: "Browse Catalogue",
         actionType: "products",
         bgType: "gradient",
-        bgValue: "from-slate-950 via-slate-900 to-amber-950/40",
+        bgValue: "linear-gradient(135deg, #020617 0%, #0f172a 40%, #78350f 100%)",
     },
     {
-        id: 2,
+        id: "slide_2",
         badge: "Industrial Supply",
         title: "Bulk Margarine, Fats & Emulsifiers",
         subtitle: "High-performance fats formulated for commercial bakeries and confectionery success.",
@@ -46,10 +46,10 @@ const defaultSlides: HeroSlide[] = [
         actionType: "category",
         actionValue: "fats-margarine",
         bgType: "gradient",
-        bgValue: "from-slate-950 via-slate-900 to-blue-950/40",
+        bgValue: "linear-gradient(135deg, #020617 0%, #0f172a 40%, #1e3a8a 100%)",
     },
     {
-        id: 3,
+        id: "slide_3",
         badge: "Certified Quality",
         title: "Signature Flavors & Food Colors",
         subtitle: "Concentrated flavoring agents and vibrant food dyes for professional creation.",
@@ -57,7 +57,7 @@ const defaultSlides: HeroSlide[] = [
         actionType: "category",
         actionValue: "flavors-emulsions",
         bgType: "gradient",
-        bgValue: "from-slate-950 via-slate-900 to-emerald-950/40",
+        bgValue: "linear-gradient(135deg, #020617 0%, #0f172a 40%, #064e3b 100%)",
     },
 ];
 
@@ -73,7 +73,6 @@ export default function HeroCarousel({
     const [prevSlidesLength, setPrevSlidesLength] = useState(slides.length);
     const [isHovered, setIsHovered] = useState(false);
 
-    // Reset slide index during render if slides count changes (React-recommended pattern)
     if (slides.length !== prevSlidesLength) {
         setPrevSlidesLength(slides.length);
         setCurrentSlide(0);
@@ -185,7 +184,7 @@ export default function HeroCarousel({
                                     : "opacity-0 translate-x-8 z-0 pointer-events-none"
                                 }`}
                         >
-                            {/* Background Handling */}
+                            {/* Background Rendering Logic */}
                             {slide.bgType === "image" && slide.bgValue && (
                                 <div
                                     className="absolute inset-0 bg-cover bg-center -z-10 transition-transform duration-700 scale-105"
@@ -197,15 +196,19 @@ export default function HeroCarousel({
 
                             {slide.bgType === "gradient" && (
                                 <div
-                                    className={`absolute inset-0 bg-gradient-to-r ${slide.bgValue || "from-slate-950 to-slate-900"
-                                        } -z-10`}
+                                    className="absolute inset-0 -z-10"
+                                    style={{
+                                        background: slide.bgValue || "linear-gradient(135deg, #020617 0%, #0f172a 40%, #78350f 100%)",
+                                    }}
                                 />
                             )}
 
                             {slide.bgType === "solid" && (
                                 <div
-                                    className="absolute inset-0 -z-10 bg-slate-950"
-                                    style={slide.bgValue ? { backgroundColor: slide.bgValue } : undefined}
+                                    className="absolute inset-0 -z-10"
+                                    style={{
+                                        backgroundColor: slide.bgValue || "#0f172a",
+                                    }}
                                 />
                             )}
 
@@ -242,40 +245,42 @@ export default function HeroCarousel({
                 })}
 
                 {/* Navigation Controls Overlay */}
-                <div className="absolute bottom-4 right-6 flex items-center gap-2 z-20">
-                    <button
-                        type="button"
-                        onClick={prevSlide}
-                        aria-label="Previous Slide"
-                        className="hidden sm:flex p-2 rounded-full bg-slate-900/80 border border-slate-700 text-white hover:border-amber-400 hover:text-amber-400 transition-colors cursor-pointer"
-                    >
-                        <ChevronLeft className="w-4 h-4" />
-                    </button>
+                {activeSlides.length > 1 && (
+                    <div className="absolute bottom-4 right-6 flex items-center gap-2 z-20">
+                        <button
+                            type="button"
+                            onClick={prevSlide}
+                            aria-label="Previous Slide"
+                            className="hidden sm:flex p-2 rounded-full bg-slate-900/80 border border-slate-700 text-white hover:border-amber-400 hover:text-amber-400 transition-colors cursor-pointer"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
 
-                    <div className="flex gap-1.5 px-1">
-                        {activeSlides.map((_, i) => (
-                            <button
-                                type="button"
-                                key={i}
-                                onClick={() => goToSlide(i)}
-                                aria-label={`Go to slide ${i + 1}`}
-                                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${i === currentSlide
-                                        ? "w-6 bg-amber-400"
-                                        : "w-1.5 bg-slate-600 hover:bg-slate-400"
-                                    }`}
-                            />
-                        ))}
+                        <div className="flex gap-1.5 px-1">
+                            {activeSlides.map((_, i) => (
+                                <button
+                                    type="button"
+                                    key={i}
+                                    onClick={() => goToSlide(i)}
+                                    aria-label={`Go to slide ${i + 1}`}
+                                    className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${i === currentSlide
+                                            ? "w-6 bg-amber-400"
+                                            : "w-1.5 bg-slate-600 hover:bg-slate-400"
+                                        }`}
+                                />
+                            ))}
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={nextSlide}
+                            aria-label="Next Slide"
+                            className="hidden sm:flex p-2 rounded-full bg-slate-900/80 border border-slate-700 text-white hover:border-amber-400 hover:text-amber-400 transition-colors cursor-pointer"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
                     </div>
-
-                    <button
-                        type="button"
-                        onClick={nextSlide}
-                        aria-label="Next Slide"
-                        className="hidden sm:flex p-2 rounded-full bg-slate-900/80 border border-slate-700 text-white hover:border-amber-400 hover:text-amber-400 transition-colors cursor-pointer"
-                    >
-                        <ChevronRight className="w-4 h-4" />
-                    </button>
-                </div>
+                )}
             </div>
         </section>
     );
