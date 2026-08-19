@@ -27,7 +27,11 @@ export async function GET(request: NextRequest) {
         const search = searchParams.get("search")?.trim();
 
         const skip = (page - 1) * limit;
-        const where: Prisma.ProductWhereInput = {};
+
+        // Enforce active status to utilize @@index([status, createdAt])
+        const where: Prisma.ProductWhereInput = {
+            status: "ACTIVE",
+        };
 
         if (categorySlug) where.category = { slug: categorySlug };
         if (brandSlug) where.brand = { slug: brandSlug };
@@ -37,8 +41,6 @@ export async function GET(request: NextRequest) {
                 { shortDescription: { contains: search, mode: "insensitive" } },
                 { category: { name: { contains: search, mode: "insensitive" } } },
                 { brand: { name: { contains: search, mode: "insensitive" } } },
-                { variants: { some: { sku: { contains: search, mode: "insensitive" } } } },
-                { variants: { some: { name: { contains: search, mode: "insensitive" } } } },
             ];
         }
 
@@ -52,8 +54,8 @@ export async function GET(request: NextRequest) {
                     name: true,
                     slug: true,
                     shortDescription: true,
-                    isFeatured: true, // ✅ CRITICAL FIX: EXPLICITLY RETURN isFeatured
-                    isLatest: true,   // ✅ EXPLICITLY RETURN isLatest
+                    isFeatured: true,
+                    isLatest: true,
                     category: {
                         select: { id: true, name: true, slug: true },
                     },
@@ -85,7 +87,7 @@ export async function GET(request: NextRequest) {
             },
             {
                 headers: {
-                    "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600",
+                    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
                 },
             }
         );
