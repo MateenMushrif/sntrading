@@ -266,7 +266,7 @@ export default function HeaderSearch() {
                                                     {p.name}
                                                 </h4>
                                                 {p.brand?.name && (
-                                                    <span className="text-xs shrink-0 font-bold uppercase tracking-wider text-accent bg-primary px-1.5 py-0.5 rounded">
+                                                    <span className="text-xs shrink-0 font-bold uppercase tracking-wider text-badge-amber bg-badge-amber-bg px-1.5 py-0.5 rounded border border-badge-amber/20">
                                                         {p.brand.name}
                                                     </span>
                                                 )}
