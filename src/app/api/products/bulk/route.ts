@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
 
         revalidatePath("/");
         revalidatePath("/products");
+        revalidatePath("/api/search/catalog-index");
 
         return NextResponse.json({
             success: true,

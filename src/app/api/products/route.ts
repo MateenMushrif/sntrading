@@ -252,6 +252,7 @@ export async function POST(request: NextRequest) {
 
         revalidatePath("/");
         revalidatePath("/products");
+        revalidatePath("/api/search/catalog-index");
 
         return NextResponse.json(newProduct, { status: 201 });
     } catch (error: unknown) {
