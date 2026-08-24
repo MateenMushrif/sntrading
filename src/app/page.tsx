@@ -1,6 +1,9 @@
 import HeroCarousel, { HeroSlide, ActionType } from "@/components/home/HeroCarousel";
 import SearchAndCategories from "@/components/home/SearchAndCategories";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
+import TrustValueStrip from "@/components/home/TrustValueStrip";
+import BrandPartnerStrip from "@/components/home/BrandPartnerStrip";
+import WholesaleCtaBanner from "@/components/home/WholesaleCtaBanner";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +16,6 @@ interface SectionConfig {
   columns: 2 | 3 | 4 | 6;
 }
 
-// Complete static class mapping so Tailwind never purges these grid rules
 const getGridClassName = (cols: number): string => {
   switch (cols) {
     case 2:
@@ -29,7 +31,7 @@ const getGridClassName = (cols: number): string => {
 };
 
 export default async function Home() {
-  const [dbSections, dbSlides, categories, products] = await Promise.all([
+  const [dbSections, dbSlides, categories, products, brands] = await Promise.all([
     prisma.storefrontSection.findMany({
       orderBy: { displayOrder: "asc" },
     }).catch(() => []),
@@ -71,6 +73,17 @@ export default async function Home() {
       },
       orderBy: { displayOrder: "asc" },
     }),
+
+    prisma.brand.findMany({
+      take: 6,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        _count: { select: { products: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }).catch(() => []),
   ]);
 
   const slides: HeroSlide[] = dbSlides.map((s) => ({
@@ -102,36 +115,45 @@ export default async function Home() {
     : defaultSections;
 
   return (
-    <div className="max-w-7xl mx-auto px-2 sm:px-3 md:px-4 flex flex-col gap-4 md:gap-6">
+    <div className="max-w-7xl mx-auto px-2 sm:px-3 md:px-4 flex flex-col gap-6 md:gap-8 pb-10">
+      {/* 1. Dynamic Hero Section */}
       {sections.map((sec) => {
-        if (!sec.enabled) return null;
-
-        if (sec.type === "hero") {
-          return <HeroCarousel key={sec.id} slides={slides.length > 0 ? slides : undefined} />;
-        }
-
-        if (sec.type === "search_categories") {
-          return (
-            <SearchAndCategories
-              key={sec.id}
-              categories={categories}
-              gridClassName={getGridClassName(sec.columns)}
-            />
-          );
-        }
-
-        if (sec.type === "featured_products") {
-          return (
-            <FeaturedProducts
-              key={sec.id}
-              products={products}
-              gridClassName={getGridClassName(sec.columns)}
-            />
-          );
-        }
-
-        return null;
+        if (!sec.enabled || sec.type !== "hero") return null;
+        return <HeroCarousel key={sec.id} slides={slides.length > 0 ? slides : undefined} />;
       })}
+
+      {/* 2. B2B Wholesale Trust Strip */}
+      <TrustValueStrip />
+
+      {/* 3. Dynamic Categories Section */}
+      {sections.map((sec) => {
+        if (!sec.enabled || sec.type !== "search_categories") return null;
+        return (
+          <SearchAndCategories
+            key={sec.id}
+            categories={categories}
+            gridClassName={getGridClassName(sec.columns)}
+          />
+        );
+      })}
+
+      {/* 4. Authorized Brand Partners */}
+      <BrandPartnerStrip brands={brands} />
+
+      {/* 5. Dynamic Featured Products Section */}
+      {sections.map((sec) => {
+        if (!sec.enabled || sec.type !== "featured_products") return null;
+        return (
+          <FeaturedProducts
+            key={sec.id}
+            products={products}
+            gridClassName={getGridClassName(sec.columns)}
+          />
+        );
+      })}
+
+      {/* 6. Wholesale Quote Call to Action */}
+      <WholesaleCtaBanner />
     </div>
   );
 }
