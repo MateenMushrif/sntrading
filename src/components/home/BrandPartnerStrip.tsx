@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Building2, ChevronRight, Package, ArrowUpRight } from "lucide-react";
+import { Building2, ChevronRight, Package, ArrowRight } from "lucide-react";
 
 interface BrandItem {
     id: string;
@@ -30,41 +30,47 @@ export default function BrandPartnerStrip({ brands }: { brands: BrandItem[] }) {
                 </Link>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {/* 2 columns on mobile, 3 columns on tablet/desktop */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {brands.map((brand) => (
                     <Link
                         key={brand.id}
                         href={`/products?brand=${brand.slug}`}
-                        className="group flex flex-col items-center justify-between rounded-2xl border border-border-subtle bg-bg-main p-4 text-center shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-xl select-none"
+                        className="group flex h-20 w-full items-center overflow-hidden rounded-2xl border border-border-subtle bg-bg-main shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-accent hover:shadow-lg select-none"
                     >
-                        {/* Logo Housing */}
-                        <div className="relative mb-3 flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-subtle bg-bg-off transition-transform duration-300 group-hover:scale-105">
+                        {/* Left Full-Height Logo Frame */}
+                        <div className="relative aspect-square h-full shrink-0 border-r border-border-subtle bg-bg-off flex items-center justify-center overflow-hidden">
                             {brand.logo ? (
                                 <Image
                                     src={brand.logo}
                                     alt={brand.name}
                                     fill
-                                    className="object-contain p-2"
-                                    sizes="64px"
+                                    className="object-contain p-2.5 transition-transform duration-300 group-hover:scale-105"
+                                    sizes="80px"
                                 />
                             ) : (
                                 <Building2 className="h-6 w-6 text-accent" />
                             )}
                         </div>
 
-                        <div className="w-full space-y-1">
-                            <h3 className="truncate text-xs font-bold text-text-main group-hover:text-accent transition-colors sm:text-sm">
-                                {brand.name}
-                            </h3>
-                            <div className="inline-flex items-center gap-1 rounded-full bg-bg-off px-2 py-0.5 text-xs text-text-muted border border-border-subtle">
-                                <Package className="h-3 w-3 text-accent shrink-0" />
-                                <span>{brand._count?.products ? `${brand._count.products} SKUs` : "Catalog"}</span>
+                        {/* Right Content Section */}
+                        <div className="flex flex-1 items-center justify-between px-3.5 sm:px-4 min-w-0">
+                            <div className="min-w-0 pr-2">
+                                <h3 className="truncate text-xs sm:text-sm font-bold text-text-main group-hover:text-accent transition-colors">
+                                    {brand.name}
+                                </h3>
+                                <div className="mt-1 flex items-center gap-1.5">
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-bg-off px-2 py-0.5 text-xs text-text-muted border border-border-subtle shrink-0">
+                                        <Package className="h-3 w-3 text-accent shrink-0" />
+                                        <span>{brand._count?.products ? `${brand._count.products} Items` : "In Stock"}</span>
+                                    </span>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="mt-3 flex w-full items-center justify-center gap-0.5 border-t border-border-subtle pt-2 text-xs font-bold text-accent">
-                            <span>Browse</span>
-                            <ArrowUpRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5" />
+                            {/* Right Arrow Prompt */}
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-off border border-border-subtle text-text-muted transition-colors group-hover:border-accent group-hover:bg-primary group-hover:text-accent">
+                                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+                            </div>
                         </div>
                     </Link>
                 ))}
