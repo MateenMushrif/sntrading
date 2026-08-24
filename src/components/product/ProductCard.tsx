@@ -44,9 +44,8 @@ function ProductCardComponent({ product, onQuickView }: ProductCardProps) {
             className="group flex h-full w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border-subtle bg-bg-main shadow-xs transition-all duration-300 hover:border-accent hover:shadow-xl select-none"
         >
             <div>
-                {/* Product Image Canvas */}
-                <div className="relative h-48 sm:h-52 w-full overflow-hidden border-b border-border-subtle bg-bg-off">
-                    {/* Top Floating Badges */}
+                {/* Proportional 16:9 Image */}
+                <div className="relative aspect-video w-full overflow-hidden border-b border-border-subtle bg-bg-off">
                     <div className="absolute top-2.5 left-2.5 right-2.5 z-10 flex items-center justify-between pointer-events-none">
                         {categoryName ? (
                             <span className="rounded-md bg-bg-main/90 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-badge-amber border border-border-subtle shadow-xs backdrop-blur-md">
@@ -65,18 +64,16 @@ function ProductCardComponent({ product, onQuickView }: ProductCardProps) {
                         )}
                     </div>
 
-                    {/* Image Cover */}
                     <div className="relative h-full w-full">
                         <Image
                             src={imageUrl}
                             alt={product.thumbnailImage?.altText || product.name}
                             fill
                             className="object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                         />
                     </div>
 
-                    {/* Add to Quote Button */}
                     <button
                         type="button"
                         onClick={(e) => {
@@ -92,25 +89,21 @@ function ProductCardComponent({ product, onQuickView }: ProductCardProps) {
                 </div>
 
                 {/* Content Section */}
-                <div className="p-4 space-y-2">
+                <div className="p-4 space-y-1.5">
                     <Link
                         href={`/products/${product.slug}`}
                         onClick={(e) => {
                             e.stopPropagation();
                         }}
-                        className="line-clamp-2 text-sm font-bold text-text-main transition-colors group-hover:text-accent sm:text-base leading-snug block"
+                        className="line-clamp-1 text-sm font-bold text-text-main transition-colors group-hover:text-accent sm:text-base leading-snug block"
                         title={product.name}
                     >
                         {product.name}
                     </Link>
 
-                    {product.shortDescription ? (
+                    {product.shortDescription && (
                         <p className="line-clamp-2 text-xs text-text-muted leading-relaxed">
                             {product.shortDescription}
-                        </p>
-                    ) : (
-                        <p className="text-xs text-text-muted italic">
-                            Commercial grade raw material for wholesale bakery production.
                         </p>
                     )}
                 </div>
@@ -120,7 +113,7 @@ function ProductCardComponent({ product, onQuickView }: ProductCardProps) {
             <div className="p-4 pt-0">
                 <div className="flex items-center justify-between border-t border-border-subtle pt-3 text-xs">
                     {product.specifications && product.specifications.length > 0 ? (
-                        <span className="truncate text-text-muted max-w-36">
+                        <span className="truncate text-text-muted">
                             <strong className="text-text-main font-semibold">{product.specifications[0].label}:</strong> {product.specifications[0].value}
                         </span>
                     ) : (
