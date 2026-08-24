@@ -14,11 +14,11 @@ export default function BrandPartnerStrip({ brands }: { brands: BrandItem[] }) {
     if (!brands || brands.length === 0) return null;
 
     return (
-        <section className="space-y-3 sm:space-y-4">
+        <section className="space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-accent sm:h-5 sm:w-5" />
-                    <h2 className="text-sm font-bold text-text-main sm:text-lg tracking-tight">
+                    <Building2 className="h-5 w-5 text-accent" />
+                    <h2 className="text-base font-bold text-text-main sm:text-lg tracking-tight">
                         Authorized Brands & Mill Partners
                     </h2>
                 </div>
@@ -26,48 +26,51 @@ export default function BrandPartnerStrip({ brands }: { brands: BrandItem[] }) {
                     href="/products"
                     className="flex items-center gap-1 text-xs font-bold text-text-muted hover:text-accent transition-colors"
                 >
-                    All Brands <ChevronRight className="h-3.5 w-3.5" />
+                    All Brands <ChevronRight className="h-4 w-4" />
                 </Link>
             </div>
 
-            {/* Dense, auto-wrapping compact pill strips */}
-            <div className="flex flex-wrap gap-2.5 sm:gap-3">
+            {/* Auto-wrapping layout with capped card width */}
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                 {brands.map((brand) => (
                     <Link
                         key={brand.id}
                         href={`/products?brand=${brand.slug}`}
-                        className="group flex h-12 sm:h-14 w-full sm:w-52 md:w-56 lg:w-60 items-center overflow-hidden rounded-xl border border-border-subtle bg-bg-main shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-accent hover:shadow-md select-none"
+                        className="group flex h-20 w-full max-w-xs sm:max-w-sm items-center overflow-hidden rounded-2xl border border-border-subtle bg-bg-main shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-accent hover:shadow-lg select-none"
                     >
-                        {/* Left Flush Square Thumbnail (100% height, fixed square) */}
+                        {/* Left Full-Height Square Logo Frame */}
                         <div className="relative aspect-square h-full shrink-0 border-r border-border-subtle bg-bg-off flex items-center justify-center overflow-hidden">
                             {brand.logo ? (
                                 <Image
                                     src={brand.logo}
                                     alt={brand.name}
                                     fill
-                                    className="object-contain p-1.5 transition-transform duration-200 group-hover:scale-105"
-                                    sizes="56px"
+                                    className="object-contain p-2.5 transition-transform duration-300 group-hover:scale-105"
+                                    sizes="80px"
                                 />
                             ) : (
-                                <Building2 className="h-5 w-5 text-accent" />
+                                <Building2 className="h-6 w-6 text-accent" />
                             )}
                         </div>
 
-                        {/* Right Content */}
-                        <div className="flex flex-1 items-center justify-between px-2.5 min-w-0">
-                            <div className="min-w-0 pr-1.5">
-                                <h3 className="truncate text-xs font-bold text-text-main group-hover:text-accent transition-colors">
+                        {/* Right Content Section */}
+                        <div className="flex flex-1 items-center justify-between px-3.5 sm:px-4 min-w-0">
+                            <div className="min-w-0 pr-2">
+                                <h3 className="truncate text-xs sm:text-sm font-bold text-text-main group-hover:text-accent transition-colors">
                                     {brand.name}
                                 </h3>
-                                <div className="mt-0.5 flex items-center gap-1 text-xs text-text-muted">
-                                    <Package className="h-3 w-3 text-accent shrink-0" />
-                                    <span className="truncate">
-                                        {brand._count?.products ? `${brand._count.products} SKUs` : "Catalog"}
+                                <div className="mt-1 flex items-center gap-1.5">
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-bg-off px-2 py-0.5 text-xs text-text-muted border border-border-subtle shrink-0">
+                                        <Package className="h-3 w-3 text-accent shrink-0" />
+                                        <span>{brand._count?.products ? `${brand._count.products} Items` : "In Stock"}</span>
                                     </span>
                                 </div>
                             </div>
 
-                            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-text-muted transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-accent" />
+                            {/* Right Arrow Prompt */}
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-off border border-border-subtle text-text-muted transition-colors group-hover:border-accent group-hover:bg-primary group-hover:text-accent">
+                                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+                            </div>
                         </div>
                     </Link>
                 ))}
