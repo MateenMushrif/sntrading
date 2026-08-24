@@ -3,7 +3,7 @@
 import React, { memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MessageSquarePlus, ArrowUpRight } from "lucide-react";
+import { MessageSquarePlus, ArrowUpRight, Sparkles } from "lucide-react";
 import { Product } from "@/types/product";
 import { useCart } from "@/context/CartContext";
 
@@ -41,37 +41,43 @@ function ProductCardComponent({ product, onQuickView }: ProductCardProps) {
     return (
         <div
             onClick={handleCardClick}
-            className="group flex h-full w-full cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-border-subtle bg-bg-main shadow-xs transition-all duration-200 hover:border-accent hover:shadow-md select-none"
+            className="group relative flex h-full w-full cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border-subtle bg-bg-main shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-xl select-none"
         >
             <div>
-                {/* 16:9 Aspect Frame */}
+                {/* Media Showcase Frame */}
                 <div className="relative aspect-video w-full overflow-hidden border-b border-border-subtle bg-bg-off">
-                    {/* Badge Strip */}
-                    <div className="absolute top-2 left-2 right-2 z-10 flex items-center justify-between pointer-events-none">
+                    {/* Top Floating Info Tags */}
+                    <div className="absolute top-2.5 left-2.5 right-2.5 z-10 flex items-center justify-between pointer-events-none">
                         {categoryName ? (
-                            <span className="rounded bg-bg-main px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-badge-amber border border-border-subtle shadow-xs truncate max-w-xs">
-                                {categoryName}
+                            <span className="inline-flex items-center gap-1 rounded-full border border-border-subtle bg-bg-main/90 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-badge-amber shadow-xs backdrop-blur-md truncate max-w-xs">
+                                <Sparkles className="h-3 w-3 text-accent shrink-0" />
+                                <span>{categoryName}</span>
                             </span>
                         ) : <span />}
 
-                        {brandName && (
-                            <span className="rounded bg-primary px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-accent shadow-xs shrink-0">
+                        {brandName ? (
+                            <span className="rounded-md bg-primary px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-accent shadow-xs shrink-0">
                                 {brandName}
+                            </span>
+                        ) : (
+                            <span className="rounded-md bg-primary px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-accent shadow-xs shrink-0">
+                                Direct Supply
                             </span>
                         )}
                     </div>
 
+                    {/* Product Media */}
                     <div className="relative h-full w-full">
                         <Image
                             src={imageUrl}
                             alt={product.thumbnailImage?.altText || product.name}
                             fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-105 pointer-events-none"
+                            className="object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
                             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         />
                     </div>
 
-                    {/* Add to Quote Button */}
+                    {/* Interactive Add to Quote Action */}
                     <button
                         type="button"
                         onClick={(e) => {
@@ -80,18 +86,18 @@ function ProductCardComponent({ product, onQuickView }: ProductCardProps) {
                         }}
                         title="Add to Quote Request"
                         aria-label="Add to Quote Request"
-                        className="absolute bottom-2 right-2 z-20 flex cursor-pointer items-center justify-center rounded-lg bg-primary p-2 text-accent shadow-sm transition-all duration-150 active:scale-95 hover:bg-accent hover:text-primary"
+                        className="absolute bottom-2.5 right-2.5 z-20 flex cursor-pointer items-center justify-center rounded-xl bg-primary p-2.5 text-accent shadow-md transition-all duration-200 active:scale-90 hover:bg-accent hover:text-primary"
                     >
                         <MessageSquarePlus className="h-4 w-4" />
                     </button>
                 </div>
 
-                {/* Card Body */}
-                <div className="p-3 space-y-1">
+                {/* Card Editorial Body */}
+                <div className="p-4 space-y-1.5">
                     <Link
                         href={`/products/${product.slug}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="line-clamp-1 text-xs font-bold text-text-main transition-colors group-hover:text-accent sm:text-sm leading-snug block"
+                        className="line-clamp-1 text-sm font-bold text-text-main transition-colors group-hover:text-accent sm:text-base leading-snug block"
                         title={product.name}
                     >
                         {product.name}
@@ -103,25 +109,27 @@ function ProductCardComponent({ product, onQuickView }: ProductCardProps) {
                         </p>
                     ) : (
                         <p className="line-clamp-1 text-xs text-text-muted italic">
-                            Commercial wholesale bakery packaging.
+                            Factory packaged bulk ingredient for commercial bakeries.
                         </p>
                     )}
                 </div>
             </div>
 
-            {/* Bottom Details Row */}
-            <div className="p-3 pt-0">
-                <div className="flex items-center justify-between border-t border-border-subtle pt-2 text-xs">
+            {/* Bottom Meta & Details Row */}
+            <div className="p-4 pt-0">
+                <div className="flex items-center justify-between border-t border-border-subtle pt-3 text-xs">
                     {product.specifications && product.specifications.length > 0 ? (
                         <span className="truncate text-text-muted max-w-xs">
-                            <strong className="text-text-main font-semibold">{product.specifications[0].label}:</strong> {product.specifications[0].value}
+                            <span className="font-semibold text-text-main">{product.specifications[0].label}:</span> {product.specifications[0].value}
                         </span>
                     ) : (
-                        <span className="text-text-muted">Standard Pack</span>
+                        <span className="inline-flex items-center rounded-md bg-accent-subtle/50 px-2 py-0.5 font-bold text-primary">
+                            Bulk Stock
+                        </span>
                     )}
 
-                    <span className="flex items-center gap-0.5 font-bold text-accent group-hover:translate-x-0.5 transition-transform shrink-0">
-                        Spec <ArrowUpRight className="h-3.5 w-3.5" />
+                    <span className="flex items-center gap-1 font-bold text-accent transition-transform duration-200 group-hover:translate-x-1 shrink-0">
+                        Details <ArrowUpRight className="h-3.5 w-3.5" />
                     </span>
                 </div>
             </div>
