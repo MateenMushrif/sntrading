@@ -25,7 +25,7 @@ const getGridClassName = (cols: number): string => {
     case 4:
     case 6:
     default:
-      return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-4";
+      return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4";
   }
 };
 
@@ -42,7 +42,7 @@ export default async function Home() {
 
     prisma.category.findMany({
       where: { isFeatured: true },
-      take: 12,
+      take: 8,
       select: {
         id: true,
         name: true,
@@ -56,7 +56,7 @@ export default async function Home() {
 
     prisma.product.findMany({
       where: { status: "ACTIVE", isFeatured: true },
-      take: 12,
+      take: 8,
       select: {
         id: true,
         name: true,
@@ -64,6 +64,7 @@ export default async function Home() {
         shortDescription: true,
         status: true,
         category: { select: { id: true, name: true, slug: true } },
+        brand: { select: { id: true, name: true, slug: true } },
         thumbnailImage: { select: { id: true, secureUrl: true, altText: true } },
         specifications: {
           select: { id: true, label: true, value: true },
@@ -100,8 +101,8 @@ export default async function Home() {
 
   const defaultSections: SectionConfig[] = [
     { id: "sec-hero", type: "hero", title: "Hero Carousel", enabled: true, columns: 4 },
-    { id: "sec-search-categories", type: "search_categories", title: "Featured Categories", enabled: true, columns: 6 },
-    { id: "sec-featured-products", type: "featured_products", title: "Featured Bakery Products", enabled: true, columns: 6 },
+    { id: "sec-search-categories", type: "search_categories", title: "Featured Categories", enabled: true, columns: 4 },
+    { id: "sec-featured-products", type: "featured_products", title: "Featured Bakery Products", enabled: true, columns: 4 },
   ];
 
   const sections: SectionConfig[] = dbSections.length > 0
@@ -110,22 +111,22 @@ export default async function Home() {
       type: s.type as "hero" | "search_categories" | "featured_products",
       title: s.title,
       enabled: s.enabled,
-      columns: (s.columns as 2 | 3 | 4 | 6) || 6,
+      columns: (s.columns as 2 | 3 | 4 | 6) || 4,
     }))
     : defaultSections;
 
   return (
-    <div className="max-w-7xl mx-auto px-2 sm:px-3 md:px-4 flex flex-col gap-6 md:gap-8 pb-10">
-      {/* 1. Dynamic Hero Section */}
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 flex flex-col gap-8 sm:gap-10">
+      {/* 1. Hero Carousel */}
       {sections.map((sec) => {
         if (!sec.enabled || sec.type !== "hero") return null;
         return <HeroCarousel key={sec.id} slides={slides.length > 0 ? slides : undefined} />;
       })}
 
-      {/* 2. B2B Wholesale Trust Strip */}
+      {/* 2. Commercial Advantages Strip */}
       <TrustValueStrip />
 
-      {/* 3. Dynamic Categories Section */}
+      {/* 3. Featured Categories */}
       {sections.map((sec) => {
         if (!sec.enabled || sec.type !== "search_categories") return null;
         return (
@@ -140,7 +141,7 @@ export default async function Home() {
       {/* 4. Authorized Brand Partners */}
       <BrandPartnerStrip brands={brands} />
 
-      {/* 5. Dynamic Featured Products Section */}
+      {/* 5. Featured Bakery Materials */}
       {sections.map((sec) => {
         if (!sec.enabled || sec.type !== "featured_products") return null;
         return (
@@ -152,7 +153,7 @@ export default async function Home() {
         );
       })}
 
-      {/* 6. Wholesale Quote Call to Action */}
+      {/* 6. High-Conversion Quote Banner */}
       <WholesaleCtaBanner />
     </div>
   );

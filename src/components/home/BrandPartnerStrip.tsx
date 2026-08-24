@@ -14,28 +14,28 @@ export default function BrandPartnerStrip({ brands }: { brands: BrandItem[] }) {
     if (!brands || brands.length === 0) return null;
 
     return (
-        <section className="space-y-4">
+        <section className="space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-accent" />
-                    <h3 className="text-base font-bold tracking-tight text-text-main sm:text-lg">
+                    <Building2 className="h-4 w-4 text-accent sm:h-5 sm:w-5" />
+                    <h2 className="text-sm font-bold text-text-main sm:text-lg tracking-tight">
                         Authorized Brands & Mill Partners
-                    </h3>
+                    </h2>
                 </div>
                 <Link
                     href="/products"
-                    className="flex items-center gap-1 text-xs font-bold text-text-muted transition-colors hover:text-accent"
+                    className="flex items-center gap-1 text-xs font-bold text-text-muted hover:text-accent transition-colors"
                 >
-                    View All Products <ChevronRight className="h-4 w-4" />
+                    All Brands <ChevronRight className="h-3.5 w-3.5" />
                 </Link>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                 {brands.map((brand) => (
                     <Link
                         key={brand.id}
                         href={`/products?brand=${brand.slug}`}
-                        className="group flex flex-col items-center justify-between rounded-xl border border-border-subtle bg-bg-main p-3 text-center shadow-xs transition-all duration-200 hover:border-accent hover:shadow-md"
+                        className="group flex flex-col items-center justify-between rounded-xl border border-border-subtle bg-bg-main p-3 text-center shadow-xs transition-all duration-200 hover:border-accent hover:shadow-md select-none"
                     >
                         <div className="relative mb-2 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border-subtle bg-bg-off transition-transform duration-200 group-hover:scale-105 sm:h-14 sm:w-14">
                             {brand.logo ? (
@@ -52,12 +52,12 @@ export default function BrandPartnerStrip({ brands }: { brands: BrandItem[] }) {
                         </div>
 
                         <div className="w-full">
-                            <h4 className="truncate text-xs font-bold text-text-main transition-colors group-hover:text-accent sm:text-sm">
+                            <h3 className="truncate text-xs font-bold text-text-main group-hover:text-accent transition-colors sm:text-sm">
                                 {brand.name}
-                            </h4>
+                            </h3>
                             <div className="mt-0.5 flex items-center justify-center gap-1 text-xs text-text-muted">
                                 <Package className="h-3 w-3 text-accent shrink-0" />
-                                <span>{brand._count?.products ? `${brand._count.products} Products` : "Bulk Stock"}</span>
+                                <span>{brand._count?.products ? `${brand._count.products} Items` : "In Stock"}</span>
                             </div>
                         </div>
                     </Link>

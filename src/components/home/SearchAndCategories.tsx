@@ -22,25 +22,25 @@ interface SearchAndCategoriesProps {
 
 export default function SearchAndCategories({
     categories,
-    gridClassName = "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-4",
+    gridClassName = "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4",
 }: SearchAndCategoriesProps) {
     if (!categories || categories.length === 0) return null;
 
     return (
-        <section className="space-y-3">
+        <section className="space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-accent" />
-                    <h2 className="text-sm font-bold tracking-tight text-text-main sm:text-base">
+                    <Tag className="h-4 w-4 text-accent sm:h-5 sm:w-5" />
+                    <h2 className="text-sm font-bold text-text-main sm:text-lg tracking-tight">
                         Featured Raw Material Categories
                     </h2>
                 </div>
 
                 <Link
                     href="/categories"
-                    className="flex items-center gap-1 text-xs font-bold text-text-muted transition-colors hover:text-accent"
+                    className="flex items-center gap-1 text-xs font-bold text-text-muted hover:text-accent transition-colors"
                 >
-                    View All <ChevronRight className="h-3.5 w-3.5" />
+                    All Categories <ChevronRight className="h-3.5 w-3.5" />
                 </Link>
             </div>
 
@@ -52,7 +52,7 @@ export default function SearchAndCategories({
                         <Link
                             key={cat.id}
                             href={`/categories/${targetSlug}`}
-                            className="group flex flex-col justify-between overflow-hidden rounded-xl border border-border-subtle bg-bg-main shadow-xs transition-all duration-200 hover:border-accent hover:shadow-md"
+                            className="group flex flex-col justify-between overflow-hidden rounded-xl border border-border-subtle bg-bg-main shadow-xs transition-all duration-200 hover:border-accent hover:shadow-md select-none"
                         >
                             <div>
                                 <div className="relative aspect-video w-full overflow-hidden border-b border-border-subtle bg-bg-off">
@@ -72,19 +72,23 @@ export default function SearchAndCategories({
                                         </div>
                                     )}
 
-                                    <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full border border-border-subtle bg-bg-main/90 px-2 py-0.5 text-xs font-bold text-text-main shadow-xs backdrop-blur-md">
+                                    <div className="absolute top-2 right-2 flex items-center gap-1 rounded bg-bg-main px-2 py-0.5 text-xs font-bold text-text-main shadow-xs border border-border-subtle">
                                         <Package className="h-3 w-3 text-accent" />
                                         <span>{cat._count?.products ?? 0}</span>
                                     </div>
                                 </div>
 
                                 <div className="p-3 space-y-0.5">
-                                    <h3 className="line-clamp-1 text-xs font-bold text-text-main transition-colors group-hover:text-accent sm:text-sm">
+                                    <h3 className="line-clamp-1 text-xs font-bold text-text-main group-hover:text-accent transition-colors sm:text-sm">
                                         {cat.name}
                                     </h3>
-                                    {cat.description && (
-                                        <p className="line-clamp-1 text-xs text-text-muted leading-normal">
+                                    {cat.description ? (
+                                        <p className="line-clamp-2 text-xs text-text-muted leading-relaxed">
                                             {cat.description}
+                                        </p>
+                                    ) : (
+                                        <p className="line-clamp-1 text-xs text-text-muted italic">
+                                            Wholesale catalog supplies.
                                         </p>
                                     )}
                                 </div>
@@ -92,7 +96,7 @@ export default function SearchAndCategories({
 
                             <div className="p-3 pt-0">
                                 <div className="flex items-center justify-between border-t border-border-subtle pt-2 text-xs font-bold text-accent">
-                                    <span>Browse</span>
+                                    <span>Browse Category</span>
                                     <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-1" />
                                 </div>
                             </div>
