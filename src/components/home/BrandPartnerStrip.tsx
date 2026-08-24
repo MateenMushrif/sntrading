@@ -30,15 +30,15 @@ export default function BrandPartnerStrip({ brands }: { brands: BrandItem[] }) {
                 </Link>
             </div>
 
-            {/* Auto-wrapping layout with capped card width */}
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            {/* Tight-width strips auto-wrapping neatly */}
+            <div className="flex flex-wrap gap-3 sm:gap-4">
                 {brands.map((brand) => (
                     <Link
                         key={brand.id}
                         href={`/products?brand=${brand.slug}`}
-                        className="group flex h-20 w-full max-w-xs sm:max-w-sm items-center overflow-hidden rounded-2xl border border-border-subtle bg-bg-main shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-accent hover:shadow-lg select-none"
+                        className="group flex h-20 w-full sm:w-64 md:w-72 items-center overflow-hidden rounded-2xl border border-border-subtle bg-bg-main shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-accent hover:shadow-lg select-none shrink-0"
                     >
-                        {/* Left Full-Height Square Logo Frame */}
+                        {/* Full Left Thumbnail Cover (Original Height) */}
                         <div className="relative aspect-square h-full shrink-0 border-r border-border-subtle bg-bg-off flex items-center justify-center overflow-hidden">
                             {brand.logo ? (
                                 <Image
@@ -67,7 +67,7 @@ export default function BrandPartnerStrip({ brands }: { brands: BrandItem[] }) {
                                 </div>
                             </div>
 
-                            {/* Right Arrow Prompt */}
+                            {/* Arrow Indicator */}
                             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-off border border-border-subtle text-text-muted transition-colors group-hover:border-accent group-hover:bg-primary group-hover:text-accent">
                                 <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                             </div>
