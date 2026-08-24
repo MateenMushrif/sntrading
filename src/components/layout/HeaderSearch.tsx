@@ -26,7 +26,6 @@ interface CatalogIndex {
     categories: SearchCategory[];
 }
 
-// Global in-memory index shared across all components
 let globalCatalog: CatalogIndex | null = null;
 let catalogPromise: Promise<CatalogIndex> | null = null;
 
@@ -63,7 +62,6 @@ export default function HeaderSearch() {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Close dropdown on page navigation
     const [prevPathname, setPrevPathname] = useState(pathname);
     if (pathname !== prevPathname) {
         setPrevPathname(pathname);
@@ -71,7 +69,6 @@ export default function HeaderSearch() {
         setIsOpen(false);
     }
 
-    // Preload the index silently on mount
     useEffect(() => {
         if (!globalCatalog) {
             loadCatalogIndex().then((data) => setCatalog(data));
@@ -80,7 +77,6 @@ export default function HeaderSearch() {
 
     const isQueryValid = query.trim().length >= 2;
 
-    // Instant local JavaScript search (0ms execution time)
     const filteredResults = useMemo(() => {
         const trimmed = query.trim().toLowerCase();
         if (!trimmed || trimmed.length < 2 || !catalog) {
@@ -188,14 +184,14 @@ export default function HeaderSearch() {
                         }
                     }}
                     onKeyDown={handleKeyDown}
-                    className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs rounded-full pl-4 pr-9 py-1.5 focus:outline-none transition-all placeholder:text-slate-400 shadow-inner"
+                    className="w-full bg-slate-900 border border-slate-700 focus:border-accent text-white text-xs rounded-full pl-4 pr-9 py-1.5 focus:outline-none transition-all placeholder:text-slate-400 shadow-inner"
                 />
 
                 {query ? (
                     <button
                         type="button"
                         onClick={handleClear}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-amber-400 transition-colors cursor-pointer"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-accent transition-colors cursor-pointer"
                     >
                         <X className="w-3 h-3" />
                     </button>
@@ -203,7 +199,7 @@ export default function HeaderSearch() {
                     <button
                         type="submit"
                         aria-label="Submit search"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-400 transition-colors cursor-pointer"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-accent transition-colors cursor-pointer"
                     >
                         <Search className="w-3.5 h-3.5" />
                     </button>
@@ -211,13 +207,11 @@ export default function HeaderSearch() {
             </form>
 
             {showDropdown && (
-                <div className="absolute top-full mt-2 left-0 w-full sm:w-80 sm:-left-8 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col ring-1 ring-black/5 z-50">
-                    <div className="h-1 w-full bg-amber-400" />
-
-                    {/* Category Tags */}
+                <div className="absolute top-full mt-2 left-0 w-full sm:w-80 sm:-left-8 bg-bg-main border border-border-subtle rounded-xl shadow-2xl overflow-hidden flex flex-col z-50">
+                    {/* Categories */}
                     {filteredResults.categories.length > 0 && (
-                        <div className="p-2.5 bg-slate-50 border-b border-slate-200">
-                            <span className="text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
+                        <div className="p-2.5 bg-bg-off border-b border-border-subtle">
+                            <span className="text-xs font-bold uppercase tracking-wider text-text-muted mb-1.5 block">
                                 Categories
                             </span>
                             <div className="flex flex-wrap gap-1.5">
@@ -226,9 +220,9 @@ export default function HeaderSearch() {
                                         key={cat.id}
                                         href={`/products?category=${cat.slug}`}
                                         onClick={closeSearchDropdown}
-                                        className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-800 hover:border-amber-400 hover:text-amber-600 shadow-xs transition-all"
+                                        className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-bg-main border border-border-subtle text-text-main hover:border-accent hover:text-accent shadow-xs transition-all"
                                     >
-                                        <Tag className="w-2.5 h-2.5 text-amber-500" />
+                                        <Tag className="w-2.5 h-2.5 text-accent" />
                                         <span>{cat.name}</span>
                                     </Link>
                                 ))}
@@ -239,7 +233,7 @@ export default function HeaderSearch() {
                     {/* Product Suggestions */}
                     {filteredResults.products.length > 0 && (
                         <div className="p-2 max-h-80 overflow-y-auto space-y-1">
-                            <span className="text-xs font-extrabold uppercase tracking-widest text-slate-400 px-2 py-1 block">
+                            <span className="text-xs font-bold uppercase tracking-wider text-text-muted px-2 py-1 block">
                                 Products
                             </span>
                             {filteredResults.products.map((p, idx) => {
@@ -252,11 +246,11 @@ export default function HeaderSearch() {
                                         href={`/products/${p.slug}`}
                                         onClick={closeSearchDropdown}
                                         className={`flex items-start gap-3 p-2 rounded-lg transition-all ${isSelected
-                                                ? "bg-amber-50 border-l-2 border-amber-500 text-slate-900"
-                                                : "hover:bg-slate-50 border-l-2 border-transparent text-slate-800"
+                                                ? "bg-accent-subtle border-l-2 border-accent text-text-main"
+                                                : "hover:bg-bg-off border-l-2 border-transparent text-text-main"
                                             }`}
                                     >
-                                        <div className="relative w-9 h-9 rounded-md border border-slate-200 bg-slate-100 overflow-hidden shrink-0 shadow-xs">
+                                        <div className="relative w-9 h-9 rounded-md border border-border-subtle bg-bg-off overflow-hidden shrink-0 shadow-xs">
                                             <Image
                                                 src={imgSrc}
                                                 alt={p.name}
@@ -268,17 +262,17 @@ export default function HeaderSearch() {
 
                                         <div className="flex-1 min-w-0 pt-0.5">
                                             <div className="flex items-start justify-between gap-1">
-                                                <h4 className="text-xs font-bold truncate leading-tight text-slate-900">
+                                                <h4 className="text-xs font-bold truncate leading-tight text-text-main">
                                                     {p.name}
                                                 </h4>
                                                 {p.brand?.name && (
-                                                    <span className="text-xs shrink-0 font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">
+                                                    <span className="text-xs shrink-0 font-bold uppercase tracking-wider text-accent bg-primary px-1.5 py-0.5 rounded">
                                                         {p.brand.name}
                                                     </span>
                                                 )}
                                             </div>
                                             {p.category?.name && (
-                                                <span className="text-xs text-slate-500 font-medium block truncate mt-0.5">
+                                                <span className="text-xs text-text-muted font-medium block truncate mt-0.5">
                                                     {p.category.name}
                                                 </span>
                                             )}
@@ -292,7 +286,7 @@ export default function HeaderSearch() {
                     <Link
                         href={`/products?search=${encodeURIComponent(query)}`}
                         onClick={closeSearchDropdown}
-                        className="block text-center py-2.5 bg-slate-900 text-xs font-bold text-amber-400 hover:bg-slate-950 transition-colors border-t border-slate-100"
+                        className="block text-center py-2.5 bg-primary text-xs font-bold text-accent hover:bg-primary-hover transition-colors border-t border-border-subtle"
                     >
                         View all results for &quot;{query}&quot; →
                     </Link>
