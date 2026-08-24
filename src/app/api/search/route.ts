@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q")?.trim() || "";
@@ -10,17 +12,14 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // Run concurrent search for products and categories
         const [products, categories] = await Promise.all([
             prisma.product.findMany({
                 where: {
+                    status: "ACTIVE",
                     OR: [
                         { name: { contains: query, mode: "insensitive" } },
-                        { shortDescription: { contains: query, mode: "insensitive" } },
                         { category: { name: { contains: query, mode: "insensitive" } } },
                         { brand: { name: { contains: query, mode: "insensitive" } } },
-                        { variants: { some: { sku: { contains: query, mode: "insensitive" } } } },
-                        { variants: { some: { name: { contains: query, mode: "insensitive" } } } },
                     ],
                 },
                 take: 6,
@@ -29,22 +28,13 @@ export async function GET(request: NextRequest) {
                     name: true,
                     slug: true,
                     category: {
-                        select: { id: true, name: true, slug: true },
+                        select: { name: true, slug: true },
                     },
                     brand: {
-                        select: { id: true, name: true, slug: true },
+                        select: { name: true },
                     },
                     thumbnailImage: {
-                        select: { id: true, secureUrl: true, altText: true },
-                    },
-                    images: {
-                        take: 1,
-                        select: { id: true, secureUrl: true, altText: true },
-                    },
-                    variants: {
-                        take: 1,
-                        orderBy: { displayOrder: "asc" },
-                        select: { id: true, name: true, weightOrSize: true },
+                        select: { secureUrl: true },
                     },
                 },
                 orderBy: { createdAt: "desc" },
@@ -53,7 +43,7 @@ export async function GET(request: NextRequest) {
                 where: {
                     name: { contains: query, mode: "insensitive" },
                 },
-                take: 4,
+                take: 3,
                 select: {
                     id: true,
                     name: true,
@@ -66,7 +56,7 @@ export async function GET(request: NextRequest) {
             { products, categories },
             {
                 headers: {
-                    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+                    "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
                 },
             }
         );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,8 +13,6 @@ interface SearchResultProduct {
     category?: { name?: string; slug?: string } | null;
     brand?: { name?: string } | null;
     thumbnailImage?: { secureUrl: string } | null;
-    images?: { secureUrl: string }[];
-    variants?: { weightOrSize: string }[];
 }
 
 interface SearchResultCategory {
@@ -23,14 +21,18 @@ interface SearchResultCategory {
     slug: string;
 }
 
+interface SearchData {
+    products: SearchResultProduct[];
+    categories: SearchResultCategory[];
+}
+
+// In-Memory client cache for zero-latency lookups
+const searchCache = new Map<string, SearchData>();
+
 export default function HeaderSearch() {
     const [query, setQuery] = useState("");
     const [loading, setLoading] = useState(false);
-    const [results, setResults] = useState<{
-        products: SearchResultProduct[];
-        categories: SearchResultCategory[];
-    }>({ products: [], categories: [] });
-
+    const [results, setResults] = useState<SearchData>({ products: [], categories: [] });
     const [isOpen, setIsOpen] = useState(false);
     const [isDismissed, setIsDismissed] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -39,9 +41,9 @@ export default function HeaderSearch() {
     const pathname = usePathname();
     const dropdownRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
-    // ✅ React Recommended Pattern: Reset state during render pass when route changes (Zero useEffect warnings)
+    // Track path changes to close dropdown during navigation
     const [prevPathname, setPrevPathname] = useState(pathname);
     if (pathname !== prevPathname) {
         setPrevPathname(pathname);
@@ -51,57 +53,75 @@ export default function HeaderSearch() {
 
     const isQueryValid = query.trim().length >= 2;
 
-    // Reset dropdown state when query is short
-    if (!isQueryValid && (results.products.length > 0 || results.categories.length > 0 || isOpen)) {
-        setResults({ products: [], categories: [] });
-        setIsOpen(false);
-    }
-
-    // Helper to immediately close the dropdown & kill any pending async callbacks
-    const closeSearchDropdown = () => {
+    const closeSearchDropdown = useCallback(() => {
         setIsDismissed(true);
         setIsOpen(false);
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
         }
         if (document.activeElement instanceof HTMLElement) {
             document.activeElement.blur();
         }
-    };
+    }, []);
 
-    // Debounced search fetcher
+    // Instant query handler with memory cache + fetch
     useEffect(() => {
-        if (!isQueryValid) return;
+        const trimmed = query.trim().toLowerCase();
 
-        timeoutRef.current = setTimeout(async () => {
+        if (trimmed.length < 2) {
+            return;
+        }
+
+        // 1. Instant 0ms cache hit
+        if (searchCache.has(trimmed)) {
+            const cached = searchCache.get(trimmed)!;
+            const timer = setTimeout(() => {
+                setResults(cached);
+                setIsOpen(true);
+                setLoading(false);
+            }, 0);
+            return () => clearTimeout(timer);
+        }
+
+        // 2. Fetch fresh results with debounce & cancelation
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
+        const timeoutId = setTimeout(async () => {
             setLoading(true);
             try {
-                const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
+                const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`, {
+                    signal: controller.signal,
+                });
                 if (res.ok) {
-                    const data = await res.json();
-                    setResults({
+                    const data: SearchData = await res.json();
+                    const sanitized: SearchData = {
                         products: Array.isArray(data.products) ? data.products : [],
                         categories: Array.isArray(data.categories) ? data.categories : [],
-                    });
+                    };
+                    searchCache.set(trimmed, sanitized);
+                    setResults(sanitized);
                     setIsOpen(true);
                     setSelectedIndex(-1);
                 }
-            } catch (err) {
-                console.error("Failed to fetch search suggestions:", err);
+            } catch (err: unknown) {
+                if (err instanceof DOMException && err.name === "AbortError") return;
+                console.error("Search fetch error:", err);
             } finally {
                 setLoading(false);
             }
-        }, 200);
+        }, 150);
 
         return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
+            clearTimeout(timeoutId);
+            controller.abort();
         };
-    }, [query, isQueryValid]);
+    }, [query]);
 
-    // Close dropdown on outside click
+    // Close on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -114,14 +134,13 @@ export default function HeaderSearch() {
     }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setQuery(e.target.value);
+        const val = e.target.value;
+        setQuery(val);
         setIsDismissed(false);
-    };
-
-    const handleInputFocus = () => {
-        if (isQueryValid) {
-            setIsDismissed(false);
-            setIsOpen(true);
+        if (val.trim().length < 2) {
+            setResults({ products: [], categories: [] });
+            setIsOpen(false);
+            setLoading(false);
         }
     };
 
@@ -170,7 +189,6 @@ export default function HeaderSearch() {
 
     return (
         <div ref={dropdownRef} className="relative w-full z-50">
-            {/* Search Input Box */}
             <form onSubmit={handleSearchSubmit} className="relative w-full">
                 <input
                     ref={inputRef}
@@ -178,7 +196,12 @@ export default function HeaderSearch() {
                     placeholder="Search ingredients, brands..."
                     value={query}
                     onChange={handleInputChange}
-                    onFocus={handleInputFocus}
+                    onFocus={() => {
+                        if (isQueryValid) {
+                            setIsDismissed(false);
+                            setIsOpen(true);
+                        }
+                    }}
                     onKeyDown={handleKeyDown}
                     className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs rounded-full pl-4 pr-9 py-1.5 focus:outline-none transition-all placeholder:text-slate-400 shadow-inner"
                 />
@@ -206,12 +229,11 @@ export default function HeaderSearch() {
                 )}
             </form>
 
-            {/* Live Suggestion Dropdown */}
             {showDropdown && (
                 <div className="absolute top-full mt-2 left-0 w-full sm:w-80 sm:-left-8 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col ring-1 ring-black/5 z-50">
                     <div className="h-1 w-full bg-amber-400" />
 
-                    {/* Categories Section */}
+                    {/* Category Badges */}
                     {results.categories.length > 0 && (
                         <div className="p-2.5 bg-slate-50 border-b border-slate-200">
                             <span className="text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
@@ -223,7 +245,7 @@ export default function HeaderSearch() {
                                         key={cat.id}
                                         href={`/products?category=${cat.slug}`}
                                         onClick={closeSearchDropdown}
-                                        className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-800 hover:border-amber-400 hover:text-amber-600 shadow-sm transition-all"
+                                        className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-800 hover:border-amber-400 hover:text-amber-600 shadow-2xs transition-all"
                                     >
                                         <Tag className="w-2.5 h-2.5 text-amber-500" />
                                         <span>{cat.name}</span>
@@ -233,7 +255,7 @@ export default function HeaderSearch() {
                         </div>
                     )}
 
-                    {/* Products List */}
+                    {/* Product Suggestions */}
                     {results.products.length > 0 && (
                         <div className="p-2 max-h-80 overflow-y-auto space-y-1">
                             <span className="text-xs font-extrabold uppercase tracking-widest text-slate-400 px-2 py-1 block">
@@ -241,10 +263,7 @@ export default function HeaderSearch() {
                             </span>
                             {results.products.map((p, idx) => {
                                 const isSelected = selectedIndex === idx;
-                                const imgSrc =
-                                    p.thumbnailImage?.secureUrl ||
-                                    p.images?.[0]?.secureUrl ||
-                                    "/placeholder-product.png";
+                                const imgSrc = p.thumbnailImage?.secureUrl || "/placeholder-product.png";
 
                                 return (
                                     <Link
@@ -256,18 +275,18 @@ export default function HeaderSearch() {
                                                 : "hover:bg-slate-50 border-l-2 border-transparent text-slate-800"
                                             }`}
                                     >
-                                        <div className="relative w-10 h-10 rounded-md border border-slate-200 bg-slate-100 overflow-hidden shrink-0 shadow-sm">
+                                        <div className="relative w-9 h-9 rounded-md border border-slate-200 bg-slate-100 overflow-hidden shrink-0 shadow-2xs">
                                             <Image
                                                 src={imgSrc}
                                                 alt={p.name}
                                                 fill
-                                                sizes="40px"
+                                                sizes="36px"
                                                 className="object-cover"
                                             />
                                         </div>
 
                                         <div className="flex-1 min-w-0 pt-0.5">
-                                            <div className="flex items-start justify-between gap-2">
+                                            <div className="flex items-start justify-between gap-1">
                                                 <h4 className="text-xs font-bold truncate leading-tight text-slate-900">
                                                     {p.name}
                                                 </h4>
@@ -277,21 +296,11 @@ export default function HeaderSearch() {
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                {p.category?.name && (
-                                                    <span className="text-xs text-slate-500 font-medium">
-                                                        {p.category.name}
-                                                    </span>
-                                                )}
-                                                {p.variants?.[0]?.weightOrSize && (
-                                                    <>
-                                                        <span className="w-1 h-1 rounded-full bg-slate-300" />
-                                                        <span className="text-xs font-bold text-slate-700">
-                                                            {p.variants[0].weightOrSize}
-                                                        </span>
-                                                    </>
-                                                )}
-                                            </div>
+                                            {p.category?.name && (
+                                                <span className="text-xs text-slate-500 font-medium block truncate mt-0.5">
+                                                    {p.category.name}
+                                                </span>
+                                            )}
                                         </div>
                                     </Link>
                                 );
@@ -299,7 +308,6 @@ export default function HeaderSearch() {
                         </div>
                     )}
 
-                    {/* Bottom Action Bar */}
                     <Link
                         href={`/products?search=${encodeURIComponent(query)}`}
                         onClick={closeSearchDropdown}
