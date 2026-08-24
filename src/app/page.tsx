@@ -80,6 +80,7 @@ export default async function Home() {
         id: true,
         name: true,
         slug: true,
+        logo: true,
         _count: { select: { products: true } },
       },
       orderBy: { createdAt: "desc" },
