@@ -17,46 +17,46 @@ export default function BrandPartnerStrip({ brands }: { brands: BrandItem[] }) {
         <section className="space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-accent" />
-                    <h3 className="text-base sm:text-lg font-bold text-text-main tracking-tight">
+                    <Building2 className="h-5 w-5 text-accent" />
+                    <h3 className="text-base font-bold tracking-tight text-text-main sm:text-lg">
                         Authorized Brands & Mill Partners
                     </h3>
                 </div>
                 <Link
                     href="/products"
-                    className="text-xs font-bold text-text-muted hover:text-accent flex items-center gap-1 transition-colors"
+                    className="flex items-center gap-1 text-xs font-bold text-text-muted transition-colors hover:text-accent"
                 >
-                    View All Products <ChevronRight className="w-4 h-4" />
+                    View All Products <ChevronRight className="h-4 w-4" />
                 </Link>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
                 {brands.map((brand) => (
                     <Link
                         key={brand.id}
                         href={`/products?brand=${brand.slug}`}
-                        className="group flex flex-col items-center justify-between p-4 bg-bg-main border border-border-subtle hover:border-accent hover:shadow-lg rounded-2xl transition-all duration-300 text-center"
+                        className="group flex flex-col items-center justify-between rounded-xl border border-border-subtle bg-bg-main p-3 text-center shadow-xs transition-all duration-200 hover:border-accent hover:shadow-md"
                     >
-                        <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-bg-off border border-border-subtle flex items-center justify-center overflow-hidden mb-3 group-hover:scale-105 transition-transform shrink-0">
+                        <div className="relative mb-2 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border-subtle bg-bg-off transition-transform duration-200 group-hover:scale-105 sm:h-14 sm:w-14">
                             {brand.logo ? (
                                 <Image
                                     src={brand.logo}
                                     alt={brand.name}
                                     fill
-                                    className="object-contain p-2"
-                                    sizes="64px"
+                                    className="object-contain p-1.5"
+                                    sizes="56px"
                                 />
                             ) : (
-                                <Building2 className="w-6 h-6 text-accent" />
+                                <Building2 className="h-5 w-5 text-accent" />
                             )}
                         </div>
 
                         <div className="w-full">
-                            <h4 className="text-xs sm:text-sm font-bold text-text-main group-hover:text-accent truncate transition-colors">
+                            <h4 className="truncate text-xs font-bold text-text-main transition-colors group-hover:text-accent sm:text-sm">
                                 {brand.name}
                             </h4>
-                            <div className="flex items-center justify-center gap-1 mt-1 text-xs text-text-muted">
-                                <Package className="w-3 h-3 text-accent shrink-0" />
+                            <div className="mt-0.5 flex items-center justify-center gap-1 text-xs text-text-muted">
+                                <Package className="h-3 w-3 text-accent shrink-0" />
                                 <span>{brand._count?.products ? `${brand._count.products} Products` : "Bulk Stock"}</span>
                             </div>
                         </div>
