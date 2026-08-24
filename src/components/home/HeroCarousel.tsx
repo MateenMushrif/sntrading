@@ -70,16 +70,21 @@ export default function HeroCarousel({
     const slideCount = activeSlides.length;
 
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [prevSlidesLength, setPrevSlidesLength] = useState(slides.length);
     const [isHovered, setIsHovered] = useState(false);
-
-    if (slides.length !== prevSlidesLength) {
-        setPrevSlidesLength(slides.length);
-        setCurrentSlide(0);
-    }
+    const [isTabVisible, setIsTabVisible] = useState(true);
 
     const startX = useRef<number | null>(null);
     const isDragging = useRef<boolean>(false);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Track tab visibility to prevent frozen / burst animations
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            setIsTabVisible(document.visibilityState === "visible");
+        };
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    }, []);
 
     const nextSlide = useCallback(() => {
         setCurrentSlide((prev) => (prev + 1) % slideCount);
@@ -93,17 +98,26 @@ export default function HeroCarousel({
         setCurrentSlide(index);
     }, []);
 
+    // Bulletproof AutoPlay Timer Loop
     useEffect(() => {
-        const isAutoPlayDisabled = mode === "manual" || (mode === "mixed" && isHovered);
-        if (isAutoPlayDisabled) return;
+        if (slideCount <= 1) return;
+        if (mode === "manual") return;
+        if (mode === "mixed" && isHovered) return;
+        if (!isTabVisible) return;
 
-        const timer = setInterval(() => {
+        timerRef.current = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % slideCount);
         }, autoPlayInterval);
 
-        return () => clearInterval(timer);
-    }, [mode, isHovered, slideCount, autoPlayInterval]);
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+        };
+    }, [slideCount, mode, isHovered, isTabVisible, autoPlayInterval]);
 
+    // Touch handlers (Mobile swipe without triggering hover freeze)
     const handleTouchStart = (e: React.TouchEvent) => {
         startX.current = e.touches[0].clientX;
     };
@@ -184,7 +198,7 @@ export default function HeroCarousel({
                                     : "opacity-0 translate-x-8 z-0 pointer-events-none"
                                 }`}
                         >
-                            {/* Background Rendering Logic */}
+                            {/* Background Handling */}
                             {slide.bgType === "image" && slide.bgValue && (
                                 <div
                                     className="absolute inset-0 bg-cover bg-center -z-10 transition-transform duration-700 scale-105"
@@ -214,7 +228,7 @@ export default function HeroCarousel({
 
                             <div className="relative z-10 max-w-xl pr-12 sm:pr-0">
                                 {slide.badge && (
-                                    <span className="inline-block bg-amber-400/20 border border-amber-400 text-amber-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
+                                    <span className="inline-block bg-accent/20 border border-accent text-accent text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
                                         {slide.badge}
                                     </span>
                                 )}
@@ -233,10 +247,10 @@ export default function HeroCarousel({
                                         onClick={(e) => {
                                             if (isDragging.current) e.preventDefault();
                                         }}
-                                        className="bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-lg text-xs sm:text-sm hover:bg-white transition-all inline-flex items-center gap-2 shadow-md group"
+                                        className="bg-accent text-primary font-bold px-5 py-2.5 rounded-lg text-xs sm:text-sm hover:bg-white transition-all inline-flex items-center gap-2 shadow-md group"
                                     >
                                         <span>{slide.ctaText}</span>
-                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                                     </Link>
                                 )}
                             </div>
@@ -244,16 +258,16 @@ export default function HeroCarousel({
                     );
                 })}
 
-                {/* Navigation Controls Overlay */}
-                {activeSlides.length > 1 && (
+                {/* Controls */}
+                {slideCount > 1 && (
                     <div className="absolute bottom-4 right-6 flex items-center gap-2 z-20">
                         <button
                             type="button"
                             onClick={prevSlide}
                             aria-label="Previous Slide"
-                            className="hidden sm:flex p-2 rounded-full bg-slate-900/80 border border-slate-700 text-white hover:border-amber-400 hover:text-amber-400 transition-colors cursor-pointer"
+                            className="hidden sm:flex p-2 rounded-full bg-slate-900/80 border border-slate-700 text-white hover:border-accent hover:text-accent transition-colors cursor-pointer"
                         >
-                            <ChevronLeft className="w-4 h-4" />
+                            <ChevronLeft className="h-4 w-4" />
                         </button>
 
                         <div className="flex gap-1.5 px-1">
@@ -264,7 +278,7 @@ export default function HeroCarousel({
                                     onClick={() => goToSlide(i)}
                                     aria-label={`Go to slide ${i + 1}`}
                                     className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${i === currentSlide
-                                            ? "w-6 bg-amber-400"
+                                            ? "w-6 bg-accent"
                                             : "w-1.5 bg-slate-600 hover:bg-slate-400"
                                         }`}
                                 />
@@ -275,9 +289,9 @@ export default function HeroCarousel({
                             type="button"
                             onClick={nextSlide}
                             aria-label="Next Slide"
-                            className="hidden sm:flex p-2 rounded-full bg-slate-900/80 border border-slate-700 text-white hover:border-amber-400 hover:text-amber-400 transition-colors cursor-pointer"
+                            className="hidden sm:flex p-2 rounded-full bg-slate-900/80 border border-slate-700 text-white hover:border-accent hover:text-accent transition-colors cursor-pointer"
                         >
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="h-4 w-4" />
                         </button>
                     </div>
                 )}
