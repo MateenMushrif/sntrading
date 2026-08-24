@@ -167,8 +167,15 @@ export default function HeaderSearch() {
 
     const showDropdown = isOpen && !isDismissed && (results.products.length > 0 || results.categories.length > 0);
 
+    const hasWarmedUpRef = useRef(false);
+    const handleWarmUp = useCallback(() => {
+        if (hasWarmedUpRef.current) return;
+        hasWarmedUpRef.current = true;
+        fetch("/api/search/warmup").catch(() => { });
+    }, []);
+
     return (
-        <div ref={dropdownRef} className="relative w-full z-50">
+        <div ref={dropdownRef} className="relative w-full z-50" onMouseEnter={handleWarmUp}>
             <form onSubmit={handleSearchSubmit} className="relative w-full">
                 <input
                     ref={inputRef}
@@ -177,6 +184,7 @@ export default function HeaderSearch() {
                     value={query}
                     onChange={handleInputChange}
                     onFocus={() => {
+                        handleWarmUp();
                         if (isQueryValid) {
                             setIsDismissed(false);
                             setIsOpen(true);
@@ -251,8 +259,8 @@ export default function HeaderSearch() {
                                         href={`/products/${p.slug}`}
                                         onClick={closeSearchDropdown}
                                         className={`flex items-start gap-3 p-2 rounded-lg transition-all ${isSelected
-                                                ? "bg-amber-50 border-l-2 border-amber-500 text-slate-900"
-                                                : "hover:bg-slate-50 border-l-2 border-transparent text-slate-800"
+                                            ? "bg-amber-50 border-l-2 border-amber-500 text-slate-900"
+                                            : "hover:bg-slate-50 border-l-2 border-transparent text-slate-800"
                                             }`}
                                     >
                                         <div className="relative w-9 h-9 rounded-md border border-slate-200 bg-slate-100 overflow-hidden shrink-0 shadow-xs">
