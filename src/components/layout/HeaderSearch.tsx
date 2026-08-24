@@ -26,9 +26,6 @@ interface SearchData {
     categories: SearchResultCategory[];
 }
 
-// In-Memory client cache for zero-latency lookups
-const searchCache = new Map<string, SearchData>();
-
 export default function HeaderSearch() {
     const [query, setQuery] = useState("");
     const [loading, setLoading] = useState(false);
@@ -43,7 +40,6 @@ export default function HeaderSearch() {
     const inputRef = useRef<HTMLInputElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    // Track path changes to close dropdown during navigation
     const [prevPathname, setPrevPathname] = useState(pathname);
     if (pathname !== prevPathname) {
         setPrevPathname(pathname);
@@ -64,26 +60,13 @@ export default function HeaderSearch() {
         }
     }, []);
 
-    // Instant query handler with memory cache + fetch
     useEffect(() => {
-        const trimmed = query.trim().toLowerCase();
+        const trimmed = query.trim();
 
         if (trimmed.length < 2) {
             return;
         }
 
-        // 1. Instant 0ms cache hit
-        if (searchCache.has(trimmed)) {
-            const cached = searchCache.get(trimmed)!;
-            const timer = setTimeout(() => {
-                setResults(cached);
-                setIsOpen(true);
-                setLoading(false);
-            }, 0);
-            return () => clearTimeout(timer);
-        }
-
-        // 2. Fetch fresh results with debounce & cancelation
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
@@ -98,12 +81,10 @@ export default function HeaderSearch() {
                 });
                 if (res.ok) {
                     const data: SearchData = await res.json();
-                    const sanitized: SearchData = {
+                    setResults({
                         products: Array.isArray(data.products) ? data.products : [],
                         categories: Array.isArray(data.categories) ? data.categories : [],
-                    };
-                    searchCache.set(trimmed, sanitized);
-                    setResults(sanitized);
+                    });
                     setIsOpen(true);
                     setSelectedIndex(-1);
                 }
@@ -121,7 +102,6 @@ export default function HeaderSearch() {
         };
     }, [query]);
 
-    // Close on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -233,7 +213,7 @@ export default function HeaderSearch() {
                 <div className="absolute top-full mt-2 left-0 w-full sm:w-80 sm:-left-8 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col ring-1 ring-black/5 z-50">
                     <div className="h-1 w-full bg-amber-400" />
 
-                    {/* Category Badges */}
+                    {/* Categories Section */}
                     {results.categories.length > 0 && (
                         <div className="p-2.5 bg-slate-50 border-b border-slate-200">
                             <span className="text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-1.5 block">
@@ -245,7 +225,7 @@ export default function HeaderSearch() {
                                         key={cat.id}
                                         href={`/products?category=${cat.slug}`}
                                         onClick={closeSearchDropdown}
-                                        className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-800 hover:border-amber-400 hover:text-amber-600 shadow-2xs transition-all"
+                                        className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-800 hover:border-amber-400 hover:text-amber-600 shadow-xs transition-all"
                                     >
                                         <Tag className="w-2.5 h-2.5 text-amber-500" />
                                         <span>{cat.name}</span>
@@ -255,7 +235,7 @@ export default function HeaderSearch() {
                         </div>
                     )}
 
-                    {/* Product Suggestions */}
+                    {/* Products List */}
                     {results.products.length > 0 && (
                         <div className="p-2 max-h-80 overflow-y-auto space-y-1">
                             <span className="text-xs font-extrabold uppercase tracking-widest text-slate-400 px-2 py-1 block">
@@ -275,7 +255,7 @@ export default function HeaderSearch() {
                                                 : "hover:bg-slate-50 border-l-2 border-transparent text-slate-800"
                                             }`}
                                     >
-                                        <div className="relative w-9 h-9 rounded-md border border-slate-200 bg-slate-100 overflow-hidden shrink-0 shadow-2xs">
+                                        <div className="relative w-9 h-9 rounded-md border border-slate-200 bg-slate-100 overflow-hidden shrink-0 shadow-xs">
                                             <Image
                                                 src={imgSrc}
                                                 alt={p.name}

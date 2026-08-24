@@ -20,15 +20,15 @@ enum ProductStatus {
 // ------------------------------------------------------
 
 model Product {
-  id               String   @id @default(cuid())
+  id               String        @id @default(cuid())
   name             String
-  slug             String   @unique
+  slug             String        @unique
   shortDescription String?
   fullDescription  String?
   status           ProductStatus @default(ACTIVE)
-  isFeatured       Boolean  @default(false)
-  isLatest         Boolean  @default(false)
-  displayOrder     Int      @default(0)
+  isFeatured       Boolean       @default(false)
+  isLatest         Boolean       @default(false)
+  displayOrder     Int           @default(0)
 
   // SEO Metadata
   metaTitle        String?
@@ -45,7 +45,7 @@ model Product {
   thumbnailImage   ProductImage? @relation("ProductThumbnail", fields: [thumbnailImageId], references: [id], onDelete: SetNull)
 
   // Child Relations
-  images           ProductImage[]            @relation("ProductGallery")
+  images           ProductImage[]         @relation("ProductGallery")
   variants         ProductVariant[]
   specifications   ProductSpecification[]
   features         ProductFeature[]
@@ -53,23 +53,21 @@ model Product {
   tags             ProductTagRelation[]
   badges           ProductBadgeRelation[]
 
-  // Self-referencing Related Products (Many-to-Many)
-  relatedFrom      RelatedProduct[]          @relation("PrimaryProduct")
-  relatedTo        RelatedProduct[]          @relation("RelatedProduct")
+  relatedFrom      RelatedProduct[]       @relation("PrimaryProduct")
+  relatedTo        RelatedProduct[]       @relation("RelatedProduct")
 
-  createdAt        DateTime                  @default(now())
-  updatedAt        DateTime                  @updatedAt
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
 
-  // Individual Foreign Key Indexes
+  // Foreign key & List indexes
   @@index([slug])
   @@index([categoryId])
   @@index([brandId])
-
-  // High-Performance Composite Indexes for List Queries & Sorting
   @@index([status, createdAt])
   @@index([status, isFeatured])
   @@index([status, isLatest])
   @@index([displayOrder])
+  @@index([name]) // B-Tree search index for name prefixes
 }
 
 // ------------------------------------------------------
@@ -118,6 +116,7 @@ model Category {
   updatedAt    DateTime  @updatedAt
 
   @@index([slug])
+  @@index([name])
   @@index([isFeatured])
   @@index([displayOrder])
 }
@@ -135,7 +134,8 @@ model Brand {
   updatedAt   DateTime  @updatedAt
 
   @@index([slug])
-  @@index([isFeatured]) // Added missing index for brand queries
+  @@index([name])
+  @@index([isFeatured])
 }
 
 // ------------------------------------------------------
