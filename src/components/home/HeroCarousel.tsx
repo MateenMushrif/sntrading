@@ -174,7 +174,7 @@ export default function HeroCarousel({
 
     return (
         <section
-            className="relative bg-slate-950 text-white overflow-hidden rounded-2xl shadow-xl my-4 select-none touch-pan-y cursor-grab active:cursor-grabbing border border-slate-800"
+            className="relative bg-slate-950 text-white overflow-hidden rounded-2xl shadow-xl select-none touch-pan-y cursor-grab active:cursor-grabbing border border-slate-800"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => {
                 setIsHovered(false);
@@ -185,7 +185,8 @@ export default function HeroCarousel({
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
         >
-            <div className="relative w-full h-72 sm:h-96 md:h-100 flex items-center">
+            {/* Height: h-56 on mobile, h-80 on tablet, h-96 on desktop */}
+            <div className="relative w-full h-56 sm:h-80 md:h-96 flex items-center">
                 {activeSlides.map((slide, index) => {
                     const isActive = index === currentSlide;
                     const href = getActionHref(slide.actionType, slide.actionValue);
@@ -193,7 +194,7 @@ export default function HeroCarousel({
                     return (
                         <div
                             key={slide.id}
-                            className={`absolute inset-0 px-6 sm:px-12 py-8 transition-all duration-500 ease-in-out flex flex-col justify-center overflow-hidden h-full ${isActive
+                            className={`absolute inset-0 px-4 sm:px-10 md:px-12 py-4 sm:py-8 transition-all duration-500 ease-in-out flex flex-col justify-center overflow-hidden h-full ${isActive
                                     ? "opacity-100 translate-x-0 z-10 pointer-events-auto"
                                     : "opacity-0 translate-x-8 z-0 pointer-events-none"
                                 }`}
@@ -226,18 +227,18 @@ export default function HeroCarousel({
                                 />
                             )}
 
-                            <div className="relative z-10 max-w-xl pr-12 sm:pr-0">
+                            <div className="relative z-10 max-w-xl pr-6 sm:pr-0">
                                 {slide.badge && (
-                                    <span className="inline-block bg-accent/20 border border-accent text-accent text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3">
+                                    <span className="inline-block bg-accent/20 border border-accent text-accent text-xs font-bold px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full uppercase tracking-widest mb-1.5 sm:mb-3">
                                         {slide.badge}
                                     </span>
                                 )}
 
-                                <h1 className="text-xl sm:text-3xl md:text-5xl font-black text-white leading-tight mb-3 line-clamp-2">
+                                <h1 className="text-base sm:text-2xl md:text-4xl font-black text-white leading-snug sm:leading-tight mb-1 sm:mb-3 line-clamp-2">
                                     {slide.title}
                                 </h1>
 
-                                <p className="text-xs sm:text-base text-slate-300 max-w-lg mb-6 leading-relaxed line-clamp-2">
+                                <p className="text-xs sm:text-sm md:text-base text-slate-300 max-w-lg mb-3 sm:mb-6 leading-relaxed line-clamp-2">
                                     {slide.subtitle}
                                 </p>
 
@@ -247,10 +248,10 @@ export default function HeroCarousel({
                                         onClick={(e) => {
                                             if (isDragging.current) e.preventDefault();
                                         }}
-                                        className="bg-accent text-primary font-bold px-5 py-2.5 rounded-lg text-xs sm:text-sm hover:bg-white transition-all inline-flex items-center gap-2 shadow-md group"
+                                        className="bg-accent text-primary font-bold px-3.5 py-1.5 sm:px-5 sm:py-2.5 rounded-lg text-xs sm:text-sm hover:bg-white transition-all inline-flex items-center gap-1.5 sm:gap-2 shadow-md group"
                                     >
                                         <span>{slide.ctaText}</span>
-                                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                        <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
                                     </Link>
                                 )}
                             </div>
@@ -260,12 +261,12 @@ export default function HeroCarousel({
 
                 {/* Controls */}
                 {slideCount > 1 && (
-                    <div className="absolute bottom-4 right-6 flex items-center gap-2 z-20">
+                    <div className="absolute bottom-3 right-4 sm:bottom-4 sm:right-6 flex items-center gap-1.5 sm:gap-2 z-20">
                         <button
                             type="button"
                             onClick={prevSlide}
                             aria-label="Previous Slide"
-                            className="hidden sm:flex p-2 rounded-full bg-slate-900/80 border border-slate-700 text-white hover:border-accent hover:text-accent transition-colors cursor-pointer"
+                            className="hidden sm:flex p-1.5 sm:p-2 rounded-full bg-slate-900/80 border border-slate-700 text-white hover:border-accent hover:text-accent transition-colors cursor-pointer"
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </button>
@@ -278,7 +279,7 @@ export default function HeroCarousel({
                                     onClick={() => goToSlide(i)}
                                     aria-label={`Go to slide ${i + 1}`}
                                     className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${i === currentSlide
-                                            ? "w-6 bg-accent"
+                                            ? "w-4 sm:w-6 bg-accent"
                                             : "w-1.5 bg-slate-600 hover:bg-slate-400"
                                         }`}
                                 />
@@ -289,7 +290,7 @@ export default function HeroCarousel({
                             type="button"
                             onClick={nextSlide}
                             aria-label="Next Slide"
-                            className="hidden sm:flex p-2 rounded-full bg-slate-900/80 border border-slate-700 text-white hover:border-accent hover:text-accent transition-colors cursor-pointer"
+                            className="hidden sm:flex p-1.5 sm:p-2 rounded-full bg-slate-900/80 border border-slate-700 text-white hover:border-accent hover:text-accent transition-colors cursor-pointer"
                         >
                             <ChevronRight className="h-4 w-4" />
                         </button>

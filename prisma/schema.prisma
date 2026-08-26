@@ -1,5 +1,5 @@
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
 generator client {
@@ -13,6 +13,15 @@ generator client {
 enum ProductStatus {
   ACTIVE
   ARCHIVED
+}
+
+enum SectionType {
+  hero
+  trust_strip
+  search_categories
+  brand_strip
+  featured_products
+  wholesale_cta
 }
 
 // ------------------------------------------------------
@@ -59,7 +68,6 @@ model Product {
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
 
-  // Foreign key & List indexes
   @@index([slug])
   @@index([categoryId])
   @@index([brandId])
@@ -67,7 +75,7 @@ model Product {
   @@index([status, isFeatured])
   @@index([status, isLatest])
   @@index([displayOrder])
-  @@index([name]) // B-Tree search index for name prefixes
+  @@index([name])
 }
 
 // ------------------------------------------------------
@@ -94,7 +102,7 @@ model ProductImage {
   createdAt          DateTime @default(now())
 
   @@index([productId])
-  @@index([productId, displayOrder]) // Accelerates gallery image sorting
+  @@index([productId, displayOrder])
 }
 
 // ------------------------------------------------------
@@ -223,9 +231,9 @@ model ProductTagRelation {
 
 model Badge {
   id       String                 @id @default(cuid())
-  name     String                 // e.g. "Bestseller", "New Arrival"
-  color    String?                // e.g. "#f59e0b"
-  icon     String?                // e.g. "sparkles"
+  name     String                 
+  color    String?                
+  icon     String?                
   priority Int                    @default(0)
 
   products ProductBadgeRelation[]
@@ -255,31 +263,30 @@ model RelatedProduct {
   @@index([relatedProductId])
 }
 
-
 // ------------------------------------------------------
-// Bakeries and Customers
+// BAKERIES AND CUSTOMERS
 // ------------------------------------------------------
 
 model Bakery {
-  id        String     @id @default(cuid())
-  name      String
-  logo      String?
-  ownerName String
-  gstin     String?
-  address   String
-  city      String
-  state     String     @default("Karnataka")
-  pinCode   String
-  country   String     @default("India")
-  phone     String
-  email     String?
-  website   String?
-  notes     String?
-  isArchived Boolean   @default(false)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id         String     @id @default(cuid())
+  name       String
+  logo       String?
+  ownerName  String
+  gstin      String?
+  address    String
+  city       String
+  state      String     @default("Karnataka")
+  pinCode    String
+  country    String     @default("India")
+  phone      String
+  email      String?
+  website    String?
+  notes      String?
+  isArchived Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
-  customers Customer[]
+  customers  Customer[]
 }
 
 model Customer {
@@ -292,7 +299,7 @@ model Customer {
   designation        String   @default("Buyer")
   gstin              String?
   notes              String?
-  status             String   @default("approved") // "pending", "approved", "inactive"
+  status             String   @default("approved")
   dateJoined         DateTime @default(now())
   lastContacted      DateTime @default(now())
   lastInquiry        String?
@@ -307,9 +314,8 @@ model Customer {
   bakery             Bakery   @relation(fields: [bakeryId], references: [id], onDelete: Cascade)
 }
 
-
 // ------------------------------------------------------
-// Staff and Roles
+// STAFF AND ROLES
 // ------------------------------------------------------
 
 model Staff {
@@ -323,7 +329,7 @@ model Staff {
   designation    String?
   employeeId     String?         @unique
   profilePhoto   String?
-  status         String          @default("active") // "active", "disabled", "pending_invitation"
+  status         String          @default("active")
   lastLogin      DateTime?
   notes          String?
   isArchived     Boolean         @default(false)
@@ -348,21 +354,20 @@ model Role {
   staffMembers    Staff[]
 }
 
-
 // ------------------------------------------------------
-// TrustedDevice and ActivityLog
+// TRUSTED DEVICES & ACTIVITY LOGS
 // ------------------------------------------------------
 
 model TrustedDevice {
   id                String   @id @default(cuid())
   deviceName        String
-  deviceId          String   @unique // e.g. "snt-node-01" or hardware ID
-  token             String   @unique // Matches the "x-device-token" header (snt_live_dt_...)
+  deviceId          String   @unique
+  token             String   @unique
   deviceFingerprint String?
-  os                String?  @default("Windows 11") // Added for TrustedDeviceView OS filter
-  deviceType        String?  @default("Desktop")    // e.g. "Desktop", "Laptop", "Terminal / Kiosk"
-  ipAddress         String?  // Added for IP tracking
-  status            String   @default("authorized") // "authorized", "disabled", "revoked"
+  os                String?  @default("Windows 11")
+  deviceType        String?  @default("Desktop")
+  ipAddress         String?  
+  status            String   @default("authorized")
   firstRegistered   DateTime @default(now())
   lastUsed          DateTime @default(now())
   
@@ -375,8 +380,8 @@ model TrustedDevice {
 
 model ActivityLog {
   id               String   @id @default(cuid())
-  action           String   // e.g., "Product Created", "Staff Login", "Device Registered"
-  target           String?  // e.g., "White Chocolate Chips", "Rahul Mulla"
+  action           String   
+  target           String?  
   ipAddress        String?
   authorizedDevice String?
   createdAt        DateTime @default(now())
@@ -385,38 +390,37 @@ model ActivityLog {
   staff            Staff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
 }
 
-
 // ------------------------------------------------------
 // STOREFRONT LAYOUT & HERO CAROUSEL PERSISTENCE
 // ------------------------------------------------------
 
 model HeroSlide {
-  id          String   @id @default(cuid())
-  badge       String?
-  title       String
-  subtitle    String
-  ctaText     String?
-  actionType  String   @default("products")
-  actionValue String?
-  bgType      String   @default("gradient") // "image" | "gradient" | "solid"
-  bgValue     String?  // Cloudinary image URL or CSS gradient
-  displayOrder Int     @default(0)
-  isEnabled   Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  badge        String?
+  title        String
+  subtitle     String
+  ctaText      String?
+  actionType   String   @default("products")
+  actionValue  String?
+  bgType       String   @default("gradient")
+  bgValue      String?  
+  displayOrder Int      @default(0)
+  isEnabled    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([displayOrder])
 }
 
 model StorefrontSection {
-  id          String   @id @default(cuid())
-  sectionKey  String   @unique // "sec-hero" | "sec-search-categories" | "sec-featured-products"
-  type        String   // "hero" | "search_categories" | "featured_products"
-  title       String
-  enabled     Boolean  @default(true)
-  columns     Int      @default(6) // 2 | 3 | 4 | 6
-  displayOrder Int     @default(0)
-  updatedAt   DateTime @updatedAt
+  id           String      @id @default(cuid())
+  sectionKey   String      @unique // "sec-hero" | "sec-trust" | "sec-search-categories" | "sec-brands" | "sec-featured-products" | "sec-wholesale-cta"
+  type         String      // "hero" | "trust_strip" | "search_categories" | "brand_strip" | "featured_products" | "wholesale_cta"
+  title        String
+  enabled      Boolean     @default(true)
+  columns      Int         @default(6) // 2 | 3 | 4 | 6
+  displayOrder Int         @default(0)
+  updatedAt    DateTime    @updatedAt
 
   @@index([displayOrder])
 }

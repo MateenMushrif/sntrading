@@ -7,7 +7,8 @@ import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-const PAGE_SIZE = 12;
+// 18 items per page fills 3 full rows of 6 columns cleanly
+const PAGE_SIZE = 18;
 
 interface ProductsPageProps {
     searchParams: Promise<{
@@ -38,7 +39,6 @@ const getProductsData = cache(async (params: Awaited<ProductsPageProps["searchPa
     const currentPage = Math.max(1, parseInt(page || "1", 10));
     const skip = (currentPage - 1) * PAGE_SIZE;
 
-    // Strict index-compatible filter on ACTIVE status
     const where: Prisma.ProductWhereInput = {
         status: "ACTIVE",
     };
@@ -113,23 +113,20 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
     return (
         <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-6 space-y-6">
-            {/* Header Title */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border-subtle pb-4">
                 <div>
-                    <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight capitalize">
+                    <h1 className="text-xl sm:text-2xl font-extrabold text-text-main tracking-tight capitalize">
                         {activeFilterText}
                     </h1>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-text-muted">
                         Showing {products.length > 0 ? (currentPage - 1) * PAGE_SIZE + 1 : 0}–
                         {Math.min(currentPage * PAGE_SIZE, totalCount)} of {totalCount} commercial bakery ingredients
                     </p>
                 </div>
             </div>
 
-            {/* Fast Server-Rendered Product Grid */}
             <ProductGrid products={products} />
 
-            {/* Pagination Controls */}
             <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}

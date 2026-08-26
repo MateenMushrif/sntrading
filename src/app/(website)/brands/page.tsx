@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
+import BrandCard from "@/components/brand/BrandCard";
 import { Award, ArrowRight, Globe, Sparkles, Building2, Package } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -38,22 +39,22 @@ export default async function BrandsPage() {
     const regularBrands = brands.filter((b) => !b.isFeatured);
 
     return (
-        <main className="max-w-7xl mx-auto px-3 sm:px-6 py-8 space-y-10">
-            {/* Hero Banner */}
-            <div className="relative rounded-2xl bg-bg-off border border-border-subtle p-6 sm:p-8 overflow-hidden">
+        <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-6 space-y-8">
+            {/* Hero Banner with Soft Background Glow Orb */}
+            <div className="relative rounded-2xl bg-bg-off border border-border-subtle p-6 sm:p-8 overflow-hidden shadow-xs">
                 <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
 
                 <div className="relative z-10 max-w-2xl space-y-2">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-extrabold bg-accent/10 text-accent border border-accent/20">
-                        <Award className="w-3.5 h-3.5" />
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-extrabold bg-badge-amber-bg text-badge-amber border border-accent/20">
+                        <Award className="w-3.5 h-3.5 text-accent" />
                         <span>Direct Factory Distribution</span>
                     </div>
 
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-text-main tracking-tight">
                         Authorized Bakery Brands
                     </h1>
 
-                    <p className="text-xs text-text-muted leading-relaxed">
+                    <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
                         We distribute authentic raw materials directly from leading national and international commercial bakery manufacturers.
                     </p>
                 </div>
@@ -64,26 +65,27 @@ export default async function BrandsPage() {
                 <section className="space-y-4">
                     <div className="flex items-center gap-2 border-b border-border-subtle pb-3">
                         <Sparkles className="w-4 h-4 text-accent" />
-                        <h2 className="text-sm font-extrabold text-primary uppercase tracking-wider">
+                        <h2 className="text-xs sm:text-sm font-black text-text-main uppercase tracking-wider">
                             Featured Partners
                         </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {featuredBrands.map((brand) => (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
+                        {featuredBrands.map((brand, index) => (
                             <div
                                 key={brand.id}
-                                className="group relative rounded-xl bg-bg-main border border-accent/40 hover:border-accent p-5 transition-all shadow-xs hover:shadow-md flex flex-col justify-between space-y-4"
+                                className="group relative rounded-xl bg-bg-main border border-border-subtle hover:border-accent p-4 sm:p-5 transition-all shadow-xs hover:shadow-md flex flex-col justify-between space-y-4"
                             >
                                 <div className="flex items-start gap-4">
-                                    <div className="relative w-16 h-16 rounded-lg bg-bg-off border border-border-subtle p-2 flex items-center justify-center shrink-0 group-hover:bg-accent/5 transition-colors overflow-hidden">
+                                    <div className="relative w-16 h-16 rounded-xl bg-bg-off border border-border-subtle p-2 flex items-center justify-center shrink-0 overflow-hidden">
                                         {brand.logo ? (
                                             <Image
                                                 src={brand.logo}
                                                 alt={brand.name}
                                                 fill
+                                                priority={index < 2}
                                                 sizes="64px"
-                                                className="object-contain p-2"
+                                                className="object-contain p-1.5 transition-transform duration-300 group-hover:scale-105"
                                             />
                                         ) : (
                                             <Building2 className="w-8 h-8 text-accent" />
@@ -92,10 +94,10 @@ export default async function BrandsPage() {
 
                                     <div className="space-y-1 min-w-0 flex-1">
                                         <div className="flex items-center justify-between gap-2">
-                                            <h3 className="text-base font-bold text-primary truncate group-hover:text-accent transition-colors">
+                                            <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-text-main truncate group-hover:text-accent transition-colors">
                                                 {brand.name}
                                             </h3>
-                                            <span className="shrink-0 px-2 py-0.5 rounded text-xs font-extrabold bg-accent/10 text-accent border border-accent/20">
+                                            <span className="shrink-0 px-2 py-0.5 rounded text-xs font-bold bg-badge-amber-bg text-badge-amber border border-accent/20">
                                                 FEATURED
                                             </span>
                                         </div>
@@ -106,9 +108,9 @@ export default async function BrandsPage() {
                                     </div>
                                 </div>
 
-                                <div className="pt-3 border-t border-border-subtle flex items-center justify-between text-xs font-extrabold">
+                                <div className="pt-3 border-t border-border-subtle flex items-center justify-between text-xs font-bold">
                                     <div className="flex items-center gap-3">
-                                        <span className="flex items-center gap-1 text-primary">
+                                        <span className="flex items-center gap-1 text-text-main">
                                             <Package className="w-3.5 h-3.5 text-accent" />
                                             {brand._count.products} Products
                                         </span>
@@ -128,7 +130,7 @@ export default async function BrandsPage() {
 
                                     <Link
                                         href={`/brands/${brand.slug}`}
-                                        className="flex items-center gap-1 text-accent group-hover:translate-x-1 transition-transform"
+                                        className="flex items-center gap-1 text-accent group-hover:translate-x-0.5 transition-transform"
                                     >
                                         <span>View Catalogue</span>
                                         <ArrowRight className="w-3.5 h-3.5" />
@@ -143,7 +145,7 @@ export default async function BrandsPage() {
             {/* All Brand Partners Grid */}
             <section className="space-y-4">
                 <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-                    <h2 className="text-sm font-extrabold text-primary uppercase tracking-wider">
+                    <h2 className="text-xs sm:text-sm font-black text-text-main uppercase tracking-wider">
                         All Brand Partners
                     </h2>
                     <span className="text-xs font-bold text-text-muted">
@@ -151,67 +153,13 @@ export default async function BrandsPage() {
                     </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {(featuredBrands.length > 0 ? regularBrands : brands).map((brand) => (
-                        <div
+                <div className="flex flex-wrap gap-2.5 sm:gap-3">
+                    {(featuredBrands.length > 0 ? regularBrands : brands).map((brand, index) => (
+                        <BrandCard
                             key={brand.id}
-                            className="group rounded-xl bg-bg-main border border-border-subtle hover:border-accent p-4 transition-all shadow-xs hover:shadow-md flex flex-col justify-between"
-                        >
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="relative w-12 h-12 rounded-lg bg-bg-off border border-border-subtle p-1.5 flex items-center justify-center shrink-0 group-hover:bg-accent/10 transition-colors overflow-hidden">
-                                        {brand.logo ? (
-                                            <Image
-                                                src={brand.logo}
-                                                alt={brand.name}
-                                                fill
-                                                sizes="48px"
-                                                className="object-contain p-1.5"
-                                            />
-                                        ) : (
-                                            <Award className="w-6 h-6 text-accent" />
-                                        )}
-                                    </div>
-
-                                    <div className="min-w-0 flex-1">
-                                        <h3 className="text-sm font-bold text-primary truncate group-hover:text-accent transition-colors">
-                                            {brand.name}
-                                        </h3>
-                                        <span className="text-xs font-extrabold text-text-muted">
-                                            {brand._count.products} SKUs Available
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <p className="text-xs text-text-muted line-clamp-2">
-                                    {brand.description || "Official manufacturer and supplier partner."}
-                                </p>
-                            </div>
-
-                            <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between text-xs font-extrabold">
-                                {brand.websiteUrl ? (
-                                    <a
-                                        href={brand.websiteUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="flex items-center gap-1 text-text-muted hover:text-accent transition-colors"
-                                    >
-                                        <Globe className="w-3 h-3" />
-                                        <span>Website</span>
-                                    </a>
-                                ) : (
-                                    <span className="text-text-muted">Direct Supplier</span>
-                                )}
-
-                                <Link
-                                    href={`/brands/${brand.slug}`}
-                                    className="flex items-center gap-1 text-accent group-hover:translate-x-1 transition-transform"
-                                >
-                                    <span>View Catalogue</span>
-                                    <ArrowRight className="w-3.5 h-3.5" />
-                                </Link>
-                            </div>
-                        </div>
+                            brand={brand}
+                            priority={index < 6}
+                        />
                     ))}
                 </div>
             </section>

@@ -131,7 +131,7 @@ export default async function CategoryDetailPage({ params }: PageProps) {
     const imageUrl = typeof category.image === "string" ? category.image : null;
 
     return (
-        <main className="mx-auto max-w-7xl px-4 py-8 space-y-6">
+        <main className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 py-6 space-y-6">
             <Link
                 href="/categories"
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-text-muted hover:text-accent transition-colors"
@@ -140,15 +140,16 @@ export default async function CategoryDetailPage({ params }: PageProps) {
                 Back to All Categories
             </Link>
 
-            <div className="overflow-hidden rounded-2xl border border-border-subtle bg-bg-off p-6 shadow-xs">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            {/* Clean Category Hero Banner */}
+            <div className="overflow-hidden rounded-xl border border-border-subtle bg-bg-off p-4 sm:p-6 shadow-sm">
+                <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
                     <div className="max-w-2xl space-y-2">
-                        <div className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent-subtle px-2.5 py-0.5 text-xs font-bold text-primary">
+                        <div className="inline-flex items-center gap-1.5 rounded bg-primary px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-accent shadow-xs">
                             <Package className="h-3.5 w-3.5 text-accent" />
                             <span>{category.products.length} Products in Catalog</span>
                         </div>
 
-                        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text-main">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-text-main">
                             {category.name}
                         </h1>
 
@@ -159,27 +160,29 @@ export default async function CategoryDetailPage({ params }: PageProps) {
                         )}
                     </div>
 
-                    <div className="relative h-28 w-full md:w-56 shrink-0 overflow-hidden rounded-xl border border-border-subtle bg-bg-main">
+                    {/* Proportional Rounded Category Image Preview */}
+                    <div className="relative h-28 w-28 sm:h-36 sm:w-36 shrink-0 overflow-hidden rounded-xl border border-border-subtle bg-bg-main shadow-xs">
                         {imageUrl ? (
                             <Image
                                 src={imageUrl}
                                 alt={category.name}
                                 fill
                                 priority
-                                sizes="(max-width: 768px) 100vw, 224px"
+                                sizes="(max-width: 640px) 112px, 144px"
                                 className="object-cover"
                             />
                         ) : (
-                            <div className="flex h-full w-full items-center justify-center text-accent">
-                                <Layers className="h-8 w-8" />
+                            <div className="flex h-full w-full items-center justify-center text-accent bg-bg-off">
+                                <Layers className="h-8 w-8 text-accent" />
                             </div>
                         )}
                     </div>
                 </div>
             </div>
 
+            {/* Product Grid Section */}
             {category.products.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border-subtle bg-bg-off p-12 text-center space-y-1">
+                <div className="rounded-xl border border-dashed border-border-subtle bg-bg-main p-12 text-center space-y-1">
                     <p className="text-sm font-bold text-text-main">
                         No products currently listed under this category.
                     </p>
@@ -190,7 +193,7 @@ export default async function CategoryDetailPage({ params }: PageProps) {
             ) : (
                 <ProductGrid
                     products={category.products as Product[]}
-                    gridClassName="grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"
+                    gridClassName="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-3"
                 />
             )}
         </main>
