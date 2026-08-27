@@ -77,88 +77,96 @@ export async function POST(request: NextRequest) {
 
         const { sections, slides } = body;
 
-        await prisma.$transaction(async (tx) => {
-            // 1. Sync Sections
-            if (Array.isArray(sections)) {
-                for (let i = 0; i < sections.length; i++) {
-                    const sec = sections[i];
-                    await tx.storefrontSection.upsert({
-                        where: { sectionKey: sec.id },
-                        update: {
-                            type: sec.type,
-                            title: sec.title,
-                            enabled: Boolean(sec.enabled),
-                            columns: Number(sec.columns) || 4,
-                            displayOrder: i + 1,
-                        },
-                        create: {
-                            sectionKey: sec.id,
-                            type: sec.type,
-                            title: sec.title,
-                            enabled: Boolean(sec.enabled),
-                            columns: Number(sec.columns) || 4,
-                            displayOrder: i + 1,
-                        },
-                    });
+        await prisma.$transaction(
+            async (tx) => {
+                // 1. Parallelize Sections Upsert
+                if (Array.isArray(sections) && sections.length > 0) {
+                    await Promise.all(
+                        sections.map((sec, i) =>
+                            tx.storefrontSection.upsert({
+                                where: { sectionKey: sec.id },
+                                update: {
+                                    type: sec.type,
+                                    title: sec.title,
+                                    enabled: Boolean(sec.enabled),
+                                    columns: Number(sec.columns) || 4,
+                                    displayOrder: i + 1,
+                                },
+                                create: {
+                                    sectionKey: sec.id,
+                                    type: sec.type,
+                                    title: sec.title,
+                                    enabled: Boolean(sec.enabled),
+                                    columns: Number(sec.columns) || 4,
+                                    displayOrder: i + 1,
+                                },
+                            })
+                        )
+                    );
                 }
-            }
 
-            // 2. Sync Hero Slides
-            if (Array.isArray(slides)) {
-                const keptSlideIds: string[] = [];
-
-                for (let i = 0; i < slides.length; i++) {
-                    const slide = slides[i];
-                    const slideIdStr = String(slide.id);
-
-                    const existingSlide = await tx.heroSlide.findUnique({
-                        where: { id: slideIdStr },
+                // 2. Fetch existing slides in a single query
+                if (Array.isArray(slides)) {
+                    const existingDbSlides = await tx.heroSlide.findMany({
                         select: { id: true },
                     });
+                    const existingIdSet = new Set(existingDbSlides.map((s) => s.id));
 
-                    if (existingSlide) {
-                        const updated = await tx.heroSlide.update({
-                            where: { id: slideIdStr },
-                            data: {
-                                badge: slide.badge || null,
-                                title: slide.title.trim(),
-                                subtitle: slide.subtitle.trim(),
-                                ctaText: slide.ctaText || null,
-                                actionType: slide.actionType || "products",
-                                actionValue: slide.actionValue || null,
-                                bgType: slide.bgType || "gradient",
-                                bgValue: slide.bgValue || null,
-                                displayOrder: i + 1,
-                                isEnabled: true,
-                            },
-                        });
-                        keptSlideIds.push(updated.id);
-                    } else {
-                        const created = await tx.heroSlide.create({
-                            data: {
-                                badge: slide.badge || null,
-                                title: slide.title.trim(),
-                                subtitle: slide.subtitle.trim(),
-                                ctaText: slide.ctaText || null,
-                                actionType: slide.actionType || "products",
-                                actionValue: slide.actionValue || null,
-                                bgType: slide.bgType || "gradient",
-                                bgValue: slide.bgValue || null,
-                                displayOrder: i + 1,
-                                isEnabled: true,
-                            },
-                        });
-                        keptSlideIds.push(created.id);
+                    const keptSlideIds: string[] = [];
+
+                    for (let i = 0; i < slides.length; i++) {
+                        const slide = slides[i];
+                        const slideIdStr = String(slide.id);
+
+                        if (existingIdSet.has(slideIdStr)) {
+                            const updated = await tx.heroSlide.update({
+                                where: { id: slideIdStr },
+                                data: {
+                                    badge: slide.badge || null,
+                                    title: slide.title.trim(),
+                                    subtitle: slide.subtitle.trim(),
+                                    ctaText: slide.ctaText || null,
+                                    actionType: slide.actionType || "products",
+                                    actionValue: slide.actionValue || null,
+                                    bgType: slide.bgType || "gradient",
+                                    bgValue: slide.bgValue || null,
+                                    displayOrder: i + 1,
+                                    isEnabled: true,
+                                },
+                            });
+                            keptSlideIds.push(updated.id);
+                        } else {
+                            const created = await tx.heroSlide.create({
+                                data: {
+                                    badge: slide.badge || null,
+                                    title: slide.title.trim(),
+                                    subtitle: slide.subtitle.trim(),
+                                    ctaText: slide.ctaText || null,
+                                    actionType: slide.actionType || "products",
+                                    actionValue: slide.actionValue || null,
+                                    bgType: slide.bgType || "gradient",
+                                    bgValue: slide.bgValue || null,
+                                    displayOrder: i + 1,
+                                    isEnabled: true,
+                                },
+                            });
+                            keptSlideIds.push(created.id);
+                        }
                     }
-                }
 
-                await tx.heroSlide.deleteMany({
-                    where: {
-                        id: { notIn: keptSlideIds },
-                    },
-                });
+                    // Delete obsolete slides
+                    await tx.heroSlide.deleteMany({
+                        where: {
+                            id: { notIn: keptSlideIds },
+                        },
+                    });
+                }
+            },
+            {
+                maxWait: 5000,
+                timeout: 15000, // Increased timeout to prevent P2028
             }
-        });
+        );
 
         revalidatePath("/");
         revalidatePath("/preview");
