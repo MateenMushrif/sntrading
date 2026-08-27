@@ -99,6 +99,7 @@ export default async function Home() {
     }),
 
     prisma.brand.findMany({
+      where: { isFeatured: true }, // <-- Fixed: now filters only featured brands
       take: 8,
       select: {
         id: true,
